@@ -161,6 +161,7 @@ mark { background: #ffd54a; color: #1b2330; border-radius: 3px; padding: 0 1px; 
 .toast { background: #1f2937; color: #fff; padding: 10px 16px; border-radius: 10px; box-shadow: var(--shadow); max-width: min(560px, 92vw); font-size: 13.5px; }
 .toast.err { background: #b3261e; }
 .toast.ok { background: #1b7f4b; }
+.toast.warn { background: #8a5300; }
 .pos-hint { display: flex; gap: 6px; align-items: center; }
 kbd { border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; font-size: 12px; background: var(--bg); }
 @media (max-width: 900px) {
@@ -244,8 +245,11 @@ dialog li { margin: 5px 0; }
 .pgtile.sel { outline: 2px solid var(--danger); outline-offset: -2px; }
 .pgtile.dragging { opacity: .4; cursor: grabbing; }
 .pgtile:active { cursor: grabbing; }
-.pgtile canvas { max-width: 100%; height: auto; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); display: block; margin: 0 auto 6px; pointer-events: none; }
-.pgtile .pgNum { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.pgtile .pgFrame { position: relative; width: 100%; aspect-ratio: 1 / 1; margin-bottom: 6px; pointer-events: none; }
+.pgtile .pgPaper { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); overflow: hidden; }
+.pgtile .pgPaper canvas { width: 100%; height: 100%; display: block; }
+.pgtile .pgNum { font-size: 12.5px; color: var(--muted); font-weight: 600; display: block; }
+.pgtile .pgFmt { font-size: 11px; color: var(--muted); display: block; margin-top: 1px; }
 .pgtile .pgSel { position: absolute; top: 6px; left: 6px; width: 18px; height: 18px; margin: 0; z-index: 2; cursor: pointer; accent-color: var(--danger); }
 .pgtile .pgHandle { position: absolute; top: 6px; right: 7px; color: var(--muted); font-size: 13px; line-height: 1; letter-spacing: -1px; z-index: 2; }
 
@@ -436,7 +440,7 @@ dialog li { margin: 5px 0; }
       </div>
 
       <div id="addTextBody">
-      <p class="hint" style="margin-top:0">Kliknite na plan da odaberete mjesto (donji lijevi kut prvog retka), ili upišite točan položaj u milimetrima.</p>
+      <p class="hint" style="margin-top:0" id="addPosHint">Kliknite na plan da odaberete mjesto (donji lijevi kut prvog retka), ili upišite točan položaj u milimetrima. Strelicama na tipkovnici fino pomaknete odabranu poziciju.</p>
       <div class="btnrow" style="margin-top:0">
         <button class="btn small" id="btnAddCopyStyle" type="button" disabled>Kopiraj izgled označenog natpisa</button>
       </div>
@@ -459,6 +463,7 @@ dialog li { margin: 5px 0; }
             <option value="italic">Arial kurziv</option>
             <option value="bolditalic">Arial podebljani kurziv</option>
             <option value="narrow">Arial uski (Narrow)</option>
+            <option value="narrowbold">Arial uski podebljano (Narrow Bold)</option>
             <option value="serif">Times (serif)</option>
             <option value="serifbold">Times podebljano</option>
             <option value="mono">Courier (mono)</option>
@@ -493,12 +498,19 @@ dialog li { margin: 5px 0; }
         </div>
       </div>
       <p class="hint" style="margin-top:-4px">X i Y mjere se od gornjeg lijevog kuta stranice. Kut je u smjeru suprotnom od kazaljke na satu.</p>
-      <label class="check"><input type="checkbox" id="addBg"> Podloga iza teksta (prekriva ono što je ispod)</label>
+      <label class="check"><input type="checkbox" id="addBoxMode"> Tekst unutar okvira (automatski prijelom retka)</label>
+      <div class="row auto" style="gap:8px;margin:0 0 6px 26px" id="addBoxRow" hidden>
+        <div class="field" style="margin:0"><label for="addBoxW">Širina okvira (mm)</label><input type="number" id="addBoxW" value="80" min="5" step="1"></div>
+        <div class="field" style="margin:0"><label for="addBoxH">Visina okvira (mm)</label><input type="number" id="addBoxH" value="40" min="5" step="1"></div>
+      </div>
+      <p class="hint sub" id="addBoxHint" hidden style="margin:0 0 6px 26px">Tekst se sam prelama na novi redak da stane u širinu okvira. Klik na plan postavlja gornji lijevi kut okvira. Veličinu okvira mijenjate i izravno na planu – povucite strelice na rubovima okvira; povlačenjem unutar okvira ga pomičete.</p>
+      <label class="check"><input type="checkbox" id="addBg"> Prekrij postojeći sadržaj podlogom iza teksta</label>
       <div class="row auto" style="gap:8px;margin:0 0 6px 26px" id="addBgRow" hidden>
         <input type="color" id="addBgColor" value="#ffffff" aria-label="Boja podloge">
         <label class="lbl" style="margin:0">Neprozirnost</label>
         <input type="range" id="addBgOp" min="10" max="100" value="100" style="width:110px">
       </div>
+      <p class="hint sub" style="margin-top:-4px">Uključeno: tekst (odn. cijeli okvir, ako je uključen način rada s okvirom) prekriva ono što je ispod. Isključeno: tekst je proziran, postojeći sadržaj ostaje vidljiv oko i ispod slova.</p>
       <label class="check"><input type="checkbox" id="addAll"> Dodaj na svim stranicama (isti položaj)</label>
       <div id="addNotice"></div>
       <button class="btn primary" id="btnAdd" type="button" disabled>Dodaj tekst na plan</button>
@@ -509,7 +521,7 @@ dialog li { margin: 5px 0; }
         <p class="hint" style="margin-top:0">Odaberite oblik, zatim povucite mišem po planu da ga nacrtate (ili samo kliknite za oblik zadane veličine). Nakon crtanja ga možete povući za pomicanje, ili povući kvadratić/krajnju točku za promjenu veličine.</p>
         <div class="row auto" style="gap:6px;margin-bottom:12px">
           <button class="btn small on" id="shapeTypeCircle" type="button" data-shapetype="circle">◯ Krug</button>
-          <button class="btn small" id="shapeTypeSquare" type="button" data-shapetype="square">▭ Kvadrat</button>
+          <button class="btn small" id="shapeTypeRect" type="button" data-shapetype="rect">▭ Pravokutnik</button>
           <button class="btn small" id="shapeTypeLine" type="button" data-shapetype="line">╱ Linija</button>
         </div>
         <div class="row auto" style="gap:8px">
@@ -532,7 +544,9 @@ dialog li { margin: 5px 0; }
         <div class="row" id="shapeSizeRow" hidden>
           <div class="field" style="margin:0"><label for="shapeCX">Središte X (mm)</label><input type="number" id="shapeCX" step="0.5"></div>
           <div class="field" style="margin:0"><label for="shapeCY">Središte Y (mm)</label><input type="number" id="shapeCY" step="0.5"></div>
-          <div class="field" style="margin:0"><label for="shapeSize">Veličina (mm)</label><input type="number" id="shapeSize" min="1" step="0.5"></div>
+          <div class="field" style="margin:0" id="shapeSizeField"><label for="shapeSize">Veličina (mm)</label><input type="number" id="shapeSize" min="1" step="0.5"></div>
+          <div class="field" style="margin:0" id="shapeWField" hidden><label for="shapeW">Širina (mm)</label><input type="number" id="shapeW" min="1" step="0.5"></div>
+          <div class="field" style="margin:0" id="shapeHField" hidden><label for="shapeH">Visina (mm)</label><input type="number" id="shapeH" min="1" step="0.5"></div>
         </div>
         <div class="row" id="shapeLineRow" hidden>
           <div class="field" style="margin:0"><label for="shapeX1">X1 (mm)</label><input type="number" id="shapeX1" step="0.5"></div>
@@ -857,7 +871,7 @@ dialog li { margin: 5px 0; }
         </div>
       </div>
       <div class="vbar" id="pagesWsBar" hidden>
-        <span id="pagesWsCount">0 stranica</span>
+        <span id="pagesWsCount">0 stranica</span><span class="muted" id="pagesWsThumbProg" hidden></span>
         <span class="sep"></span>
         <span class="muted">Povucite sličicu da premjestite stranicu na novo mjesto</span>
         <span class="spacer"></span>
@@ -891,7 +905,7 @@ dialog li { margin: 5px 0; }
   <h3>Kratke upute</h3>
   <ul>
     <li><b>Edit tekst</b> – tražite tekst u cijelom dokumentu (po želji samo određenu boju) i zamijenite ga, obrišite ili mu promijenite izgled; ili kliknite natpis na planu: uredite dio teksta (proširite/suzite označeno u polju), promijenite boju/veličinu/podebljanje (i samo označenog dijela), povucite ga mišem ili ga pomaknite strelicama, dupliciraj ili obriši.</li>
-    <li><b>Dodaj</b> – novi tekst na odabranom mjestu (po želji kopirajte izgled trenutačno označenog natpisa; podloga, više fontova, datum, žigovi) ili novi oblik (krug, kvadrat, linija – s obrubom i/ili ispunom); povucite mišem po planu da ga nacrtate, po potrebi na svim stranicama.</li>
+    <li><b>Dodaj</b> – novi tekst na odabranom mjestu (po želji kopirajte izgled trenutačno označenog natpisa; podloga, više fontova, datum, žigovi) ili novi oblik (krug, pravokutnik, linija – s obrubom i/ili ispunom); povucite mišem po planu da ga nacrtate, po potrebi na svim stranicama.</li>
     <li><b>Slika</b> – uvezite sliku potpisa/pečata/loga (ili isijecite dio izravno s trenutačno otvorene PDF stranice povlačenjem pravokutnika) i obradite je jednim od dva podalata: <b>Ručno brisanje</b> (gumica – prijeđite mišem preko dijela koji želite ukloniti, bez obzira na boju) ili <b>Pametno brisanje</b> (izdvaja stvarne piksele plave tinte – kemijska olovka, pečat – s fotografije i zadržava im izvornu boju, uz podesive RGB/HSV pragove, mekoću ruba, uklanjanje šuma i predloške); zatim po želji preboji preostalo i obreži prazan rub. Pregled i mala usporedba original/maska prikazuju se uživo. Kad završite, spremite je za karticu „Potpis”.</li>
     <li><b>Potpis</b> – pripremljenu sliku samo pozicionirate na dokument: veličina, kut, prozirnost; povuci mišem.</li>
     <li><b>Stranice</b> – sličice, okretanje, premještanje, dupliciranje, umetanje prazne, brisanje (pojedinačno ili više odjednom), dodavanje iz jednog ili više drugih PDF-ova, izdvajanje raspona.</li>
@@ -2053,7 +2067,30 @@ dialog li { margin: 5px 0; }
     ctx.assign(unit.ref, ns);
   }
 
-  /** Add new text at page user-space position (x,y = baseline-left). */
+  /** Greedy word-wrap: splits `text` on explicit newlines (kept as paragraph breaks), then wraps
+   * each paragraph so every line's measured width fits within `maxWidth` (same units as measureFn's
+   * result). A single word that alone exceeds maxWidth is kept on its own (overflowing) line rather
+   * than being force-broken mid-word. */
+  function wrapTextToWidth(text, maxWidth, measureFn) {
+    const out = [];
+    for (const para of String(text).split(/\r?\n/)) {
+      const words = para.split(/\s+/).filter(Boolean);
+      if (!words.length) { out.push(''); continue; }
+      let line = words[0];
+      for (let i = 1; i < words.length; i++) {
+        const candidate = line + ' ' + words[i];
+        if (measureFn(candidate) <= maxWidth) line = candidate;
+        else { out.push(line); line = words[i]; }
+      }
+      out.push(line);
+    }
+    return out;
+  }
+
+  /** Add new text at page user-space position. In point mode (default), (x,y) is the baseline-left
+   * of the first line, and an optional `bg` background is fit tightly to the typed text. In box mode
+   * (`o.box = {width,height}` in points), (x,y) is the box's TOP-LEFT corner, text automatically
+   * wraps to `box.width`, and `bg` (if given) covers the whole box rather than just the text. */
   async function addText(doc, pageIndex, o) {
     let key = o.fontKey || (o.bold ? 'bold' : 'regular');
     if (!state.fontBytes[key]) key = /bold/.test(key) ? 'bold' : 'regular';
@@ -2062,26 +2099,42 @@ dialog li { margin: 5px 0; }
     const font = await doc.embedFont(state.fontBytes[key], { subset: true });
     const page = doc.getPages()[pageIndex];
     const [r, g, b] = hexToRgb01(o.color || '#000000');
-    const lines = String(o.text).split(/\r?\n/);
     const lh = o.size * 1.2;
     const rot = o.rotate || 0;
     const rad = (rot * Math.PI) / 180;
     const sq = o.narrow ? 0.82 : 1;
+    const lines = o.box ? wrapTextToWidth(o.text, o.box.width, (s) => font.widthOfTextAtSize(s, o.size) * sq) : String(o.text).split(/\r?\n/);
+    // rotate a local-space offset vector (vx,vy) into page space around the (o.x,o.y) anchor
+    const rotVec = (vx, vy) => [vx * Math.cos(rad) - vy * Math.sin(rad), vx * Math.sin(rad) + vy * Math.cos(rad)];
+    if (o.box) {
+      if (o.bg) {
+        const [dx, dy] = rotVec(0, -o.box.height);
+        const [br, bgc, bb] = hexToRgb01(o.bg.color || '#ffffff');
+        page.drawRectangle({ x: o.x + dx, y: o.y + dy, width: o.box.width, height: o.box.height, rotate: degrees(rot), color: rgb(br, bgc, bb), opacity: o.bg.opacity === undefined ? 1 : o.bg.opacity, borderWidth: 0 });
+      }
+      if (o.narrow) page.pushOperators(setCharacterSqueeze(82));
+      lines.forEach((ln, i) => {
+        if (!ln) return;
+        const [dx, dy] = rotVec(0, -o.size * 0.9 - lh * i);
+        page.drawText(ln, { x: o.x + dx, y: o.y + dy, size: o.size, font, color: rgb(r, g, b), rotate: degrees(rot) });
+      });
+      if (o.narrow) page.pushOperators(setCharacterSqueeze(100));
+      return { unsupported: bad, lineCount: lines.length, wrappedHeight: (lines.length - 1) * lh + o.size * 1.12 };
+    }
     if (o.bg) {
       const pad = o.bg.pad === undefined ? o.size * 0.25 : o.bg.pad;
       let wmax = 0;
       lines.forEach((ln) => { wmax = Math.max(wmax, font.widthOfTextAtSize(ln, o.size) * sq); });
       const bw = wmax + 2 * pad; const bh = (lines.length - 1) * lh + o.size * 1.12 + 2 * pad;
-      const ox = -pad; const oy = -(lines.length - 1) * lh - o.size * 0.22 - pad;
-      const llx = o.x + ox * Math.cos(rad) - oy * Math.sin(rad); const lly = o.y + ox * Math.sin(rad) + oy * Math.cos(rad);
+      const [dx, dy] = rotVec(-pad, -(lines.length - 1) * lh - o.size * 0.22 - pad);
       const [br, bgc, bb] = hexToRgb01(o.bg.color || '#ffffff');
-      page.drawRectangle({ x: llx, y: lly, width: bw, height: bh, rotate: degrees(rot), color: rgb(br, bgc, bb), opacity: o.bg.opacity === undefined ? 1 : o.bg.opacity, borderWidth: 0 });
+      page.drawRectangle({ x: o.x + dx, y: o.y + dy, width: bw, height: bh, rotate: degrees(rot), color: rgb(br, bgc, bb), opacity: o.bg.opacity === undefined ? 1 : o.bg.opacity, borderWidth: 0 });
     }
     if (o.narrow) page.pushOperators(setCharacterSqueeze(82));
     lines.forEach((ln, i) => {
       if (!ln) return;
-      const ox = Math.sin(rad) * lh * i; const oy = -Math.cos(rad) * lh * i;
-      page.drawText(ln, { x: o.x + ox, y: o.y + oy, size: o.size, font, color: rgb(r, g, b), rotate: degrees(rot) });
+      const [dx, dy] = rotVec(0, -lh * i);
+      page.drawText(ln, { x: o.x + dx, y: o.y + dy, size: o.size, font, color: rgb(r, g, b), rotate: degrees(rot) });
     });
     if (o.narrow) page.pushOperators(setCharacterSqueeze(100));
     return { unsupported: bad };
@@ -2153,7 +2206,7 @@ dialog li { margin: 5px 0; }
   }
 
   root.PdfEngine = {
-    init, analyzePage, findMatches, matchEdits, applyEdits, addText, addImage, addShape, runsInRect, unsupportedChars, subQuad, parseContent, mul, toBytes, latin1,
+    init, analyzePage, findMatches, matchEdits, applyEdits, addText, addImage, addShape, runsInRect, unsupportedChars, subQuad, parseContent, mul, toBytes, latin1, wrapTextToWidth,
     groupRuns, groupText, rangeToPieces,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.PdfEngine;
@@ -2252,6 +2305,7 @@ function visibleCenterUser() {
 async function openBytes(bytes, name, handle) {
   if (S.dirty && !window.confirm('Imate promjene koje nisu spremljene. Otvoriti drugi dokument bez spremanja?')) return;
   if (String.fromCharCode(...bytes.slice(0, 5)) !== '%PDF-') { toast('Ovo ne izgleda kao PDF datoteka.', 'err'); return; }
+  for (const t of document.querySelectorAll('.toast.warn')) t.remove(); // notices about the previous document
   setBusy(true, 'Otvaram dokument…');
   try {
     await loadCurrent(bytes, { reset: true });
@@ -2261,12 +2315,85 @@ async function openBytes(bytes, name, handle) {
     S.hist = [{ bytes: S.bytes, desc: 'Izvorni dokument' }]; S.hi = 0; S.dirty = false;
     $('#fileName').textContent = name; $('#fileName').title = name;
     $('#empty').hidden = true;
-    renderHistory(); updateButtons();
+    renderHistory(); updateButtons(); updateStatus();
+    docOpenNotices();
   } catch (err) {
     console.error(err);
     const enc = /encrypt/i.test(String(err && err.message));
     toast(enc ? 'Dokument je zaštićen lozinkom/šifriran – takve PDF-ove aplikacija ne može uređivati.' : 'Dokument se ne može otvoriti: ' + (err && err.message), 'err', 8000);
   } finally { setBusy(false); }
+}
+
+// ------------------------------------------------------------ document diagnostics (why can't I edit this?)
+// A page whose resources (incl. nested form XObjects) contain no fonts at all has no real text:
+// everything that looks like text is a picture -- typical for scans and for "Microsoft Print to PDF"
+// output that rasterised the page into image strips.
+const _pageKindCache = new WeakMap();
+function _resHasFonts(res, depth) {
+  const { PDFName, PDFDict } = window.PDFLib;
+  if (!res || depth > 4) return { fonts: false, images: false };
+  let fonts = false; let images = false;
+  try { const f = res.lookup(PDFName.of('Font')); if (f instanceof PDFDict && f.keys().length) fonts = true; } catch (e) { /* ignore */ }
+  let xo = null; try { xo = res.lookup(PDFName.of('XObject')); } catch (e) { xo = null; }
+  if (xo instanceof PDFDict) {
+    for (const k of xo.keys()) {
+      let x = null; try { x = xo.lookup(k); } catch (e) { x = null; }
+      if (!x || !(x.dict instanceof PDFDict)) continue;
+      const st = x.dict.get(PDFName.of('Subtype'));
+      if (st === PDFName.of('Image')) images = true;
+      else if (st === PDFName.of('Form') && !fonts) {
+        let r = null; try { r = x.dict.lookup(PDFName.of('Resources')); } catch (e) { r = null; }
+        const sub = _resHasFonts(r instanceof PDFDict ? r : null, depth + 1);
+        fonts = fonts || sub.fonts; images = images || sub.images;
+      }
+      if (fonts && images) break;
+    }
+  }
+  return { fonts, images };
+}
+/** 'text' | 'image' (no fonts, has images) | 'empty' (no fonts, no images) */
+function pageKind(i) {
+  if (!S.doc) return 'empty';
+  let m = _pageKindCache.get(S.doc); if (!m) { m = new Map(); _pageKindCache.set(S.doc, m); }
+  if (m.has(i)) return m.get(i);
+  let kind = 'text';
+  try {
+    const node = S.doc.getPage(i).node;
+    const r = _resHasFonts(node.Resources ? node.Resources() : null, 0);
+    kind = r.fonts ? 'text' : (r.images ? 'image' : 'empty');
+  } catch (e) { kind = 'text'; }
+  m.set(i, kind); return kind;
+}
+/** Number of digital-signature fields (/FT /Sig) in the document's AcroForm. */
+function countSignatures(doc) {
+  const { PDFName, PDFDict, PDFArray } = window.PDFLib;
+  let n = 0;
+  try {
+    const af = doc.catalog.lookup(PDFName.of('AcroForm'));
+    if (!(af instanceof PDFDict)) return 0;
+    const walk = (arr, depth) => {
+      if (!(arr instanceof PDFArray) || depth > 5) return;
+      for (let i = 0; i < arr.size(); i++) {
+        let f = null; try { f = arr.lookup(i); } catch (e) { f = null; }
+        if (!(f instanceof PDFDict)) continue;
+        if (f.get(PDFName.of('FT')) === PDFName.of('Sig')) n++;
+        let kids = null; try { kids = f.lookup(PDFName.of('Kids')); } catch (e) { kids = null; }
+        walk(kids, depth + 1);
+      }
+    };
+    walk(af.lookup(PDFName.of('Fields')), 0);
+  } catch (e) { /* ignore */ }
+  return n;
+}
+function docOpenNotices() {
+  const n = S.numPages; let img = 0; let txt = 0;
+  for (let i = 0; i < n; i++) { const k = pageKind(i); if (k === 'image') img++; else if (k === 'text') txt++; }
+  if (img && (txt === 0 || img / n >= 0.75)) {
+    toast((txt === 0 ? 'Ovaj PDF ne sadrži pravi tekst – sve stranice su slike' : `Većina stranica ovog PDF-a (${img} od ${n}) su slike, bez pravog teksta`)
+      + ' (sken ili ispis kroz „Microsoft Print to PDF”). Takav se tekst ne može izravno mijenjati; prekrijte ga i upišite novi alatom Dodaj → Tekst uz „Prekrij postojeći sadržaj podlogom”.', 'warn', 15000);
+  }
+  const sig = countSignatures(S.doc);
+  if (sig) toast(`Dokument je digitalno potpisan (${sig === 1 ? '1 potpis' : sig + ' potpisa'}). Svaka izmjena poništava valjanost potpisa u spremljenoj kopiji – izvorna datoteka ostaje netaknuta.`, 'warn', 15000);
 }
 
 // Some real-world PDFs (common in CAD/plan exports) set a CropBox smaller than the page's actual
@@ -2325,12 +2452,17 @@ async function analyzeRest() {
   for (let i = 0; i < S.numPages; i++) if (i !== S.page - 1) order.push(i);
   for (let k = 0; k < order.length; k++) {
     if (tok !== S.analysisTok || doc !== S.doc) return;
+    // text analysis isn't needed on "Stranice" -- pause it there so the page thumbnails get the CPU
+    while (S.tab === 'pages' && tok === S.analysisTok && doc === S.doc) await sleep(300);
+    if (tok !== S.analysisTok || doc !== S.doc) return;
     analyzePageSafe(order[k]);
-    if (k % 2 === 1) { $('#hint').textContent = `Analiza stranica… ${k + 2}/${S.numPages}`; await sleep(0); }
+    if (S.tab !== 'pages') $('#hint').textContent = `Analiza stranica… ${k + 2}/${S.numPages}`;
+    await sleep(0);
   }
   if (tok !== S.analysisTok || doc !== S.doc) return;
   S.analysisDone = true;
   updateColorOptions(); refreshMatches(); updateStatus();
+  setTimeout(pumpThumbs, 400); // start preparing page thumbnails in the background
 }
 function curRuns() { const a = S.analyses.get(S.page - 1); return a ? a.runs : []; }
 function allRuns(scope) {
@@ -2519,7 +2651,8 @@ function updateStatus() {
   const r = S.hover || S.sel;
   if (S.tab === 'add') {
     if (addMode === 'shape') { h.textContent = S.shape ? 'Povucite oblik za pomicanje, kvadratić/krajnju točku za promjenu veličine, ili povucite po planu za novi oblik.' : 'Povucite mišem po planu da nacrtate oblik (ili kliknite za oblik zadane veličine).'; return; }
-    h.innerHTML = S.addPos ? 'Položaj odabran. Možete ga promijeniti novim klikom.' : 'Kliknite na plan da odaberete mjesto za novi tekst.'; return;
+    if (S.addPos && $('#addBoxMode').checked) { h.textContent = 'Okvir postavljen. Povucite strelice na rubovima okvira za promjenu veličine, unutar okvira za pomicanje; strelice na tipkovnici fino pomiču.'; return; }
+    h.innerHTML = S.addPos ? 'Položaj odabran. Možete ga promijeniti novim klikom ili fino pomaknuti strelicama na tipkovnici.' : 'Kliknite na plan da odaberete mjesto za novi tekst.'; return;
   }
   if (S.tab === 'img') { h.textContent = S.img ? 'Povucite sliku za pomicanje, kvadratić u kutu za promjenu veličine, ili kliknite novo mjesto.' : 'Prvo pripremite sliku potpisa (kartica „Slika”).'; return; }
   if (S.tab === 'imgfix') { h.textContent = S.img ? 'Uređivanje slike potpisa vrši se u glavnom prozoru.' : 'Odaberite sliku potpisa u lijevom izborniku da je uredite.'; return; }
@@ -2529,7 +2662,10 @@ function updateStatus() {
     h.innerHTML = `Natpis <b>„${esc(r.text)}”</b> · ${esc(r.fontName || '?')} · ${fmtPt(r.effSize)} pt · ${dot(r.color)} ${colorName(r.color)}`;
   } else {
     const n = curRuns().length;
-    h.textContent = n ? `Na ovoj stranici ima ${n} natpisa. Kliknite na natpis da ga uredite.` : 'Na ovoj stranici nema tekstualnih natpisa koje je moguće urediti (možda je skenirana slika ili je tekst pretvoren u linije).';
+    const kind = n ? 'text' : pageKind(S.page - 1);
+    h.textContent = n ? `Na ovoj stranici ima ${n} natpisa. Kliknite na natpis da ga uredite.`
+      : kind === 'image' ? 'Ova stranica je slika (sken ili ispis kroz „Microsoft Print to PDF”) – u njoj nema pravog teksta pa se ne može uređivati. Tekst možete prekriti i upisati novi: Dodaj → Tekst uz „Prekrij postojeći sadržaj podlogom”.'
+        : 'Na ovoj stranici nema tekstualnih natpisa koje je moguće urediti (možda je skenirana slika ili je tekst pretvoren u linije).';
   }
 }
 
@@ -2605,6 +2741,7 @@ function cursorFor(x, y) {
       if (h === 'shapemove') return 'move';
       if (h) return 'nwse-resize';
     }
+    if (addMode === 'text') { const h = addBoxHit(x, y); if (h) return addBoxCursor(h); }
     return 'crosshair';
   }
   if (S.tab === 'img') {
@@ -2632,6 +2769,9 @@ ovEl.addEventListener('mousedown', (e) => {
   } else if (S.tab === 'img' && S.img && S.img.pos && S.img.pos.page === S.page - 1) {
     const h = imgHit(x, y);
     if (h) { drag.mode = h; drag.start = { ux: S.img.pos.ux, uy: S.img.pos.uy, w: S.img.wpt, h: S.img.hpt }; }
+  } else if (S.tab === 'add' && addMode === 'text' && addBoxHit(x, y)) {
+    drag.mode = addBoxHit(x, y);
+    drag.start = startAddBoxDrag(drag.mode, x, y);
   } else if (S.tab === 'add' && addMode === 'shape') {
     const h = (S.shape && S.shape.page === S.page - 1) ? shapeHit(x, y) : null;
     if (h) {
@@ -2666,6 +2806,9 @@ window.addEventListener('mousemove', (e) => {
     const f = clamp(Math.hypot(x - vx, y - vy) / half, 0.05, 20);
     im.wpt = drag.start.w * f; im.hpt = drag.start.h * f;
     syncImgInputs(); drawOverlay();
+  } else if (drag.mode === 'boxmove' || drag.mode.startsWith('boxresize-')) {
+    const [px, py] = evPos(e);
+    dragAddBox(drag.mode, drag.start, px, py, dx, dy);
   } else if (drag.mode === 'snipdraw') {
     const [px, py] = evPos(e);
     const [ux, uy] = S.viewport.convertToPdfPoint(px, py);
@@ -2712,6 +2855,7 @@ window.addEventListener('mouseup', (e) => {
     return;
   }
   if (d.mode === 'imgmove' || d.mode === 'imgresize') { syncImgInputs(); return; }
+  if (d.mode === 'boxmove' || d.mode.startsWith('boxresize-')) { syncAddInputs(); updateButtons(); updateAddNotice(); return; }
   if (d.mode === 'shapemove' || d.mode === 'shaperesize' || d.mode === 'shaperesize1' || d.mode === 'shaperesize2') { syncShapeInputs(); updateButtons(); return; }
   if (d.mode === 'shapedraw' && d.moved) { syncShapeInputs(); updateButtons(); return; }
   if (d.moved) return;
@@ -2820,6 +2964,7 @@ function updateWsVisibility() {
 }
 function setTab(t) {
   const wasImgfix = S.tab === 'imgfix'; // was on "Slika", possibly coming back to a PDF-based tab
+  const wasPages = S.tab === 'pages'; // the PDF view was hidden there too (a PDF may have been opened meanwhile)
   if (S.snipMode && t !== 'imgfix') exitSnipMode(true);
   S.tab = t;
   for (const b of document.querySelectorAll('.tab')) b.setAttribute('aria-selected', String(b.dataset.tab === t));
@@ -2830,7 +2975,7 @@ function setTab(t) {
   if (t === 'img' && S.img && !S.img.pos && S.viewport) placeImgDefault();
   if (t === 'imgfix') updateEraseUi();
   // the PDF canvas may have (re)rendered at a wrong fit-to-window size while hidden (e.g. via undo/redo)
-  const leavingImgWs = wasImgfix && t !== 'imgfix';
+  const leavingImgWs = (wasImgfix && t !== 'imgfix') || (wasPages && t !== 'pages' && t !== 'imgfix');
   if (leavingImgWs && S.pdfjs) renderPage(); else if (t !== 'pages') { drawOverlay(); updateStatus(); }
   updateButtons();
 }
@@ -3248,17 +3393,20 @@ const ADD_FONTS = {
   italic: { key: 'italic', css: 'Arial, Helvetica, "Liberation Sans", sans-serif', w: 'italic ' },
   bolditalic: { key: 'bolditalic', css: 'Arial, Helvetica, "Liberation Sans", sans-serif', w: 'italic bold ' },
   narrow: { key: 'regular', css: 'Arial, Helvetica, "Liberation Sans", sans-serif', w: '', narrow: true },
+  narrowbold: { key: 'bold', css: 'Arial, Helvetica, "Liberation Sans", sans-serif', w: 'bold ', narrow: true },
   serif: { key: 'serif', css: '"Times New Roman", Times, "Liberation Serif", serif', w: '' },
   serifbold: { key: 'serifbold', css: '"Times New Roman", Times, "Liberation Serif", serif', w: 'bold ' },
   mono: { key: 'mono', css: '"Courier New", Courier, "Liberation Mono", monospace', w: '' },
 };
 function addOpts() {
   const f = ADD_FONTS[$('#addFont').value] || ADD_FONTS.regular;
+  const boxOn = $('#addBoxMode').checked;
   return {
     text: $('#addText').value, size: parseFloat($('#addSize').value) || 8, color: $('#addColor').value || '#000000',
     rot: parseFloat($('#addRot').value) || 0, f, fontKey: f.key, narrow: !!f.narrow,
     bg: $('#addBg').checked ? { color: $('#addBgColor').value, opacity: (parseFloat($('#addBgOp').value) || 100) / 100 } : null,
     all: $('#addAll').checked,
+    box: boxOn ? { width: (parseFloat($('#addBoxW').value) || 80) / PT_MM, height: (parseFloat($('#addBoxH').value) || 40) / PT_MM } : null,
   };
 }
 function drawAddGhost(ctx) {
@@ -3270,23 +3418,131 @@ function drawAddGhost(ctx) {
   ctx.beginPath(); ctx.moveTo(vx - 9, vy); ctx.lineTo(vx + 9, vy); ctx.moveTo(vx, vy - 9); ctx.lineTo(vx, vy + 9); ctx.stroke();
   ctx.beginPath(); ctx.arc(vx, vy, 3.2, 0, Math.PI * 2); ctx.stroke();
   const o = addOpts();
+  ctx.translate(vx, vy); ctx.rotate((-o.rot * Math.PI) / 180);
+  const px = o.size * S.scale; const lh = px * 1.2;
+  ctx.font = `${o.f.w}${px}px ${o.f.css}`;
+  ctx.textBaseline = 'alphabetic';
+  const sq = o.narrow ? 0.82 : 1;
+  // box mode: (0,0) here is the box's top-left corner -- draw its outline (true size, unaffected by
+  // the narrow-font squeeze below) so the user can see the defined area even before typing anything.
+  const bw = o.box ? o.box.width * S.scale : 0; const bh = o.box ? o.box.height * S.scale : 0;
+  if (o.box) {
+    ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = '#e91e63'; ctx.lineWidth = 1; ctx.strokeRect(0, 0, bw, bh); ctx.restore();
+  }
   if (o.text.trim()) {
-    ctx.translate(vx, vy); ctx.rotate((-o.rot * Math.PI) / 180);
+    const lines = o.box ? E.wrapTextToWidth(o.text, bw / sq, (s) => ctx.measureText(s).width) : o.text.split(/\r?\n/);
+    ctx.save();
     if (o.narrow) ctx.scale(0.82, 1);
-    const px = o.size * S.scale; const lh = px * 1.2;
-    ctx.font = `${o.f.w}${px}px ${o.f.css}`;
-    ctx.textBaseline = 'alphabetic';
-    const lines = o.text.split(/\r?\n/);
     if (o.bg) {
-      let wmax = 0; lines.forEach((ln) => { wmax = Math.max(wmax, ctx.measureText(ln).width); });
-      const pad = px * 0.25;
       ctx.globalAlpha = 0.75 * o.bg.opacity; ctx.fillStyle = o.bg.color;
-      ctx.fillRect(-pad, -(px * 0.9 + pad), wmax + 2 * pad, (lines.length - 1) * lh + px * 1.12 + 2 * pad);
+      if (o.box) {
+        ctx.fillRect(0, 0, bw / sq, bh / sq); // covers the whole box; /sq compensates the scale above
+      } else {
+        let wmax = 0; lines.forEach((ln) => { wmax = Math.max(wmax, ctx.measureText(ln).width); });
+        const pad = px * 0.25;
+        ctx.fillRect(-pad, -(px * 0.9 + pad), wmax + 2 * pad, (lines.length - 1) * lh + px * 1.12 + 2 * pad);
+      }
     }
     ctx.globalAlpha = 0.75; ctx.fillStyle = o.color;
-    lines.forEach((ln, i) => ctx.fillText(ln, 0, i * lh));
+    const yOff = o.box ? px * 0.9 : 0;
+    lines.forEach((ln, i) => ctx.fillText(ln, 0, yOff + i * lh));
+    ctx.restore();
   }
+  if (o.box) drawBoxHandles(ctx, bw, bh);
   ctx.restore();
+}
+
+// ---- box mode: resize (arrow handles on the edges) / move (drag inside) the text box right on the plan
+const BOX_MIN_MM = 5;
+const BOX_HANDLE_R = 8;
+/** One round white marker with a double-headed arrow along `ang` (radians, local box frame). */
+function drawArrowHandle(ctx, cx, cy, ang) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.globalAlpha = 1; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(0, 0, BOX_HANDLE_R, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#e91e63'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.rotate(ang);
+  const L = 5; const hd = 2.6;
+  ctx.beginPath(); ctx.moveTo(-L, 0); ctx.lineTo(L, 0);
+  ctx.moveTo(L - hd, -hd); ctx.lineTo(L, 0); ctx.lineTo(L - hd, hd);
+  ctx.moveTo(-L + hd, -hd); ctx.lineTo(-L, 0); ctx.lineTo(-L + hd, hd);
+  ctx.strokeStyle = '#e91e63'; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.restore();
+}
+/** Handle centres in box-local px: just outside each edge, so they never hide the text being typed. */
+const BOX_HANDLE_OFF = BOX_HANDLE_R + 3;
+function boxHandlePts(bw, bh) {
+  const o = BOX_HANDLE_OFF; const od = o * 0.72;
+  return { e: [bw + o, bh / 2, 0], w: [-o, bh / 2, 0], s: [bw / 2, bh + o, Math.PI / 2], n: [bw / 2, -o, Math.PI / 2], se: [bw + od, bh + od, Math.PI / 4] };
+}
+function drawBoxHandles(ctx, bw, bh) {
+  const hs = boxHandlePts(bw, bh);
+  for (const k of ['e', 'w', 's', 'n', 'se']) drawArrowHandle(ctx, hs[k][0], hs[k][1], hs[k][2]);
+}
+/** Geometry of the pending box in viewport pixels: anchor (top-left corner) + rotation of its axes. */
+function addBoxGeom() {
+  const p = S.addPos; const vp = S.viewport;
+  if (!p || !vp || p.page !== S.page - 1) return null;
+  const o = addOpts(); if (!o.box) return null;
+  const [vx, vy] = vp.convertToViewportPoint(p.ux, p.uy);
+  const a = (-o.rot * Math.PI) / 180; // same rotation the ghost is drawn with
+  return { vx, vy, a, cos: Math.cos(a), sin: Math.sin(a), bw: o.box.width * S.scale, bh: o.box.height * S.scale };
+}
+/** viewport point -> box-local pixels (x along the box's width, y down along its height) */
+function boxLocal(g, x, y) { const dx = x - g.vx; const dy = y - g.vy; return [dx * g.cos + dy * g.sin, -dx * g.sin + dy * g.cos]; }
+/** box-local pixel vector -> viewport pixel vector */
+function boxToView(g, lx, ly) { return [lx * g.cos - ly * g.sin, lx * g.sin + ly * g.cos]; }
+function addBoxHit(x, y) {
+  if (S.tab !== 'add' || addMode !== 'text') return null;
+  const g = addBoxGeom(); if (!g) return null;
+  const [lx, ly] = boxLocal(g, x, y);
+  const hs = boxHandlePts(g.bw, g.bh);
+  // nearest handle wins (at low zoom a small box's handles overlap each other)
+  let best = null; let bd = BOX_HANDLE_R + 3;
+  for (const k of ['se', 'e', 's', 'w', 'n']) { const dd = Math.hypot(lx - hs[k][0], ly - hs[k][1]); if (dd <= bd) { bd = dd; best = k; } }
+  if (best) return 'boxresize-' + best;
+  if (lx >= 0 && lx <= g.bw && ly >= 0 && ly <= g.bh) return 'boxmove';
+  return null;
+}
+/** CSS resize cursor matching the (possibly rotated) direction a handle drags in. */
+function addBoxCursor(hit) {
+  const g = addBoxGeom(); if (!g) return 'crosshair';
+  if (hit === 'boxmove') return 'move';
+  const k = hit.slice(10);
+  const extra = (k === 'n' || k === 's') ? 90 : k === 'se' ? 45 : 0;
+  let deg = ((g.a * 180) / Math.PI + extra) % 180; if (deg < 0) deg += 180;
+  const cur = ['ew-resize', 'nwse-resize', 'ns-resize', 'nesw-resize'];
+  return cur[Math.round(deg / 45) % 4];
+}
+function startAddBoxDrag(hit, x, y) {
+  const g = addBoxGeom();
+  const [lx, ly] = boxLocal(g, x, y); // where the handle was grabbed -- the edge follows the mouse DELTA from here
+  return { ux: S.addPos.ux, uy: S.addPos.uy, g, lx, ly };
+}
+function dragAddBox(mode, start, x, y, dx, dy) {
+  const p = S.addPos; if (!p || !start || !start.g) return;
+  if (mode === 'boxmove') {
+    const [dux, duy] = dispPxToUser(dx, dy);
+    p.ux = start.ux + dux; p.uy = start.uy + duy;
+  } else {
+    const g = start.g; const k = mode.slice(10);
+    const [lx, ly] = boxLocal(g, x, y);
+    const dlx = lx - start.lx; const dly = ly - start.ly;
+    const minPx = (BOX_MIN_MM / PT_MM) * S.scale;
+    let x0 = 0; let y0 = 0; let x1 = g.bw; let y1 = g.bh;
+    if (k === 'e' || k === 'se') x1 = Math.max(g.bw + dlx, minPx);
+    if (k === 's' || k === 'se') y1 = Math.max(g.bh + dly, minPx);
+    if (k === 'w') x0 = Math.min(dlx, g.bw - minPx);
+    if (k === 'n') y0 = Math.min(dly, g.bh - minPx);
+    const toMm = (px) => Math.round((px / S.scale) * PT_MM * 10) / 10;
+    $('#addBoxW').value = toMm(x1 - x0); $('#addBoxH').value = toMm(y1 - y0);
+    // dragging the left / top edge moves the box's anchor (its top-left corner) as well
+    const [vdx, vdy] = boxToView(g, x0, y0);
+    const [dux, duy] = dispPxToUser(vdx, vdy);
+    p.ux = start.ux + dux; p.uy = start.uy + duy;
+  }
+  syncAddInputs(); drawOverlay(); updateAddNotice();
 }
 function syncAddInputs() {
   const p = S.addPos; const vp = S.viewport;
@@ -3300,7 +3556,7 @@ function onAddCoordInput() {
   if (!isFinite(x) || !isFinite(y)) return;
   const [ux, uy] = mmToUser(x, y);
   S.addPos = { page: S.page - 1, ux, uy };
-  drawOverlay(); updateButtons();
+  drawOverlay(); updateButtons(); updateStatus();
 }
 $('#addX').oninput = onAddCoordInput; $('#addY').oninput = onAddCoordInput;
 function revealPoint(vx, vy) {
@@ -3315,10 +3571,22 @@ const revealAddPos = () => {
   const [vx, vy] = S.viewport.convertToViewportPoint(p.ux, p.uy); revealPoint(vx, vy);
 };
 $('#addX').onchange = revealAddPos; $('#addY').onchange = revealAddPos;
-for (const id of ['addText', 'addFont', 'addSize', 'addColor', 'addRot', 'addBgColor', 'addBgOp']) {
+for (const id of ['addText', 'addFont', 'addSize', 'addColor', 'addRot', 'addBgColor', 'addBgOp', 'addBoxW', 'addBoxH']) {
   $('#' + id).oninput = () => { drawOverlay(); updateButtons(); updateAddNotice(); };
 }
 $('#addBg').onchange = () => { $('#addBgRow').hidden = !$('#addBg').checked; drawOverlay(); };
+function updateAddPosHint() {
+  const boxOn = $('#addBoxMode').checked;
+  $('#addPosHint').textContent = boxOn
+    ? 'Kliknite na plan da odaberete gornji lijevi kut okvira, ili upišite točan položaj u milimetrima. Strelicama na tipkovnici fino pomaknete odabranu poziciju.'
+    : 'Kliknite na plan da odaberete mjesto (donji lijevi kut prvog retka), ili upišite točan položaj u milimetrima. Strelicama na tipkovnici fino pomaknete odabranu poziciju.';
+}
+$('#addBoxMode').onchange = () => {
+  const on = $('#addBoxMode').checked;
+  $('#addBoxRow').hidden = !on; $('#addBoxHint').hidden = !on;
+  updateAddPosHint(); drawOverlay(); updateButtons(); updateAddNotice(); updateStatus();
+};
+updateAddPosHint();
 $('#addAll').onchange = updateButtons;
 for (const b of document.querySelectorAll('[data-color]')) b.onclick = () => { $('#addColor').value = b.dataset.color; drawOverlay(); };
 const todayStr = () => { const d = new Date(); const p = (n) => String(n).padStart(2, '0'); return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}.`; };
@@ -3333,9 +3601,20 @@ for (const b of document.querySelectorAll('[data-stamp]')) b.onclick = () => {
   if (!S.addPos && S.viewport) { const [ux, uy] = visibleCenterUser(); S.addPos = { page: S.page - 1, ux, uy }; syncAddInputs(); drawOverlay(); updateButtons(); }
 };
 function updateAddNotice() {
-  const o = addOpts(); const box = $('#addNotice'); box.innerHTML = '';
+  const o = addOpts(); const noticeBox = $('#addNotice');
+  const msgs = [];
   const bad = E.unsupportedChars(o.text, o.fontKey);
-  if (bad.length) box.innerHTML = `<div class="notice err">Znakovi koje aplikacija ne može zapisati: ${esc(bad.join(' '))}</div>`;
+  if (bad.length) msgs.push(`<div class="notice err">Znakovi koje aplikacija ne može zapisati: ${esc(bad.join(' '))}</div>`);
+  if (o.box && o.text.trim()) {
+    const octx = $('#ov').getContext('2d');
+    const sq = o.narrow ? 0.82 : 1;
+    octx.font = `${o.f.w}${o.size}px ${o.f.css}`;
+    const lines = E.wrapTextToWidth(o.text, o.box.width / sq, (s) => octx.measureText(s).width);
+    const lh = o.size * 1.2;
+    const wrappedH = (lines.length - 1) * lh + o.size * 1.12;
+    if (wrappedH > o.box.height) msgs.push(`<div class="notice err">Tekst (${lines.length} redaka) premašuje visinu okvira – dio teksta će ispasti izvan okvira.</div>`);
+  }
+  noticeBox.innerHTML = msgs.join('');
 }
 
 // ---- copy font/size/color(/angle) from a run selected elsewhere in the document (see "Natpis" tab)
@@ -3344,7 +3623,7 @@ function copyStyleFromRun(r) {
   $('#addSize').value = Math.round(r.effSize * 10) / 10;
   $('#addColor').value = r.color;
   $('#addRot').value = Math.round((r.rot - vpRot) * 10) / 10;
-  $('#addFont').value = r.font.narrow ? 'narrow' : (r.font.bold ? (r.font.italic ? 'bolditalic' : 'bold') : (r.font.italic ? 'italic' : 'regular'));
+  $('#addFont').value = r.font.narrow ? (r.font.bold ? 'narrowbold' : 'narrow') : (r.font.bold ? (r.font.italic ? 'bolditalic' : 'bold') : (r.font.italic ? 'italic' : 'regular'));
   drawOverlay(); updateButtons(); updateAddNotice();
 }
 function updateAddCopyBtn() {
@@ -3365,12 +3644,25 @@ $('#btnAdd').onclick = async () => {
   await doEdit(`Dodan tekst „${o.text.split(/\r?\n/)[0]}”${o.all ? ' (sve stranice)' : ''}`, async () => {
     let unsupported = [];
     for (const pg of pages) {
-      const r = await E.addText(S.doc, pg, { text: o.text, x: p.ux, y: p.uy, size: o.size, color: o.color, rotate: rotUser, fontKey: o.fontKey, narrow: o.narrow, bg: o.bg });
+      const r = await E.addText(S.doc, pg, { text: o.text, x: p.ux, y: p.uy, size: o.size, color: o.color, rotate: rotUser, fontKey: o.fontKey, narrow: o.narrow, bg: o.bg, box: o.box });
       unsupported = unsupported.concat(r.unsupported || []);
     }
     return { unsupported };
   });
 };
+
+/** Fine-positions the pending "Dodaj" text placement with the keyboard (0.5mm per press, 2.5mm with
+ * Shift) -- same step size as nudging a selected run on the "Edit tekst" tab. Only moves the not-yet
+ * -placed S.addPos marker; nothing is written to the document until "Dodaj tekst na plan" is clicked. */
+function nudgeAddPos(dir, mult) {
+  const p = S.addPos; if (!p || S.busy) return;
+  const step = NUDGE_STEP_MM * (mult || 1);
+  const dxmm = dir === 'left' ? -step : dir === 'right' ? step : 0;
+  const dymm = dir === 'up' ? -step : dir === 'down' ? step : 0;
+  const [dux, duy] = dispMmToUser(dxmm, dymm);
+  p.ux += dux; p.uy += duy;
+  syncAddInputs(); drawOverlay(); updateButtons();
+}
 
 // ============================================================ add shapes (circle / square / line) — lives inside the "Dodaj" tab
 let addMode = 'text'; // 'text' | 'shape' — which sub-tool is active in "Dodaj"
@@ -3401,6 +3693,7 @@ function syncShapeInputs() {
   const s = S.shape;
   $('#shapeSizeRow').hidden = !s || s.type === 'line';
   $('#shapeLineRow').hidden = !s || s.type !== 'line';
+  if (s) { $('#shapeSizeField').hidden = s.type === 'rect'; $('#shapeWField').hidden = s.type !== 'rect'; $('#shapeHField').hidden = s.type !== 'rect'; }
   if (!s || !S.viewport || s.page !== S.page - 1) return;
   if (s.type === 'line') {
     const [x1, y1] = userToMm(s.x1, s.y1); const [x2, y2] = userToMm(s.x2, s.y2);
@@ -3408,8 +3701,14 @@ function syncShapeInputs() {
     setIfNotFocused('shapeX2', rnd1(x2)); setIfNotFocused('shapeY2', rnd1(y2));
   } else {
     const [cx, cy] = userToMm((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2);
-    const sizeMm = Math.abs(s.x2 - s.x1) * PT_MM;
-    setIfNotFocused('shapeCX', rnd1(cx)); setIfNotFocused('shapeCY', rnd1(cy)); setIfNotFocused('shapeSize', Math.round(sizeMm * 10) / 10);
+    setIfNotFocused('shapeCX', rnd1(cx)); setIfNotFocused('shapeCY', rnd1(cy));
+    if (s.type === 'rect') {
+      setIfNotFocused('shapeW', Math.round(Math.abs(s.x2 - s.x1) * PT_MM * 10) / 10);
+      setIfNotFocused('shapeH', Math.round(Math.abs(s.y2 - s.y1) * PT_MM * 10) / 10);
+    } else {
+      const sizeMm = Math.abs(s.x2 - s.x1) * PT_MM;
+      setIfNotFocused('shapeSize', Math.round(sizeMm * 10) / 10);
+    }
   }
 }
 
@@ -3424,11 +3723,12 @@ function placeDefaultShape(ux, uy) {
   }
   syncShapeInputs(); drawOverlay(); updateButtons();
 }
-/** Live-updates S.shape while the user drags out a new shape; keeps circle/square proportional (equal sides). */
+/** Live-updates S.shape while the user drags out a new shape; keeps the circle proportional (equal
+ * sides, so it stays a true circle) but lets a rectangle be dragged out freely in either dimension. */
 function updateShapeDraw(ux0, uy0, ux1, uy1) {
   const type = curShapeType();
   let x2 = ux1; let y2 = uy1;
-  if (type !== 'line') {
+  if (type === 'circle') {
     const side = Math.max(Math.abs(ux1 - ux0), Math.abs(uy1 - uy0), 1);
     x2 = ux0 + (Math.sign(ux1 - ux0) || 1) * side;
     y2 = uy0 + (Math.sign(uy1 - uy0) || 1) * side;
@@ -3524,14 +3824,23 @@ $('#btnShapeClear').onclick = () => { S.shape = null; syncShapeInputs(); drawOve
 
 function onShapeSizeInput() {
   const s = S.shape; if (!s || !S.viewport) return;
-  const cx = parseFloat($('#shapeCX').value); const cy = parseFloat($('#shapeCY').value); const sz = parseFloat($('#shapeSize').value);
-  if (!isFinite(cx) || !isFinite(cy) || !(sz > 0)) return;
+  const cx = parseFloat($('#shapeCX').value); const cy = parseFloat($('#shapeCY').value);
+  if (!isFinite(cx) || !isFinite(cy)) return;
   const [ux, uy] = mmToUser(cx, cy);
-  const half = (sz / 2) / PT_MM;
-  s.x1 = ux - half; s.y1 = uy - half; s.x2 = ux + half; s.y2 = uy + half;
+  if (s.type === 'rect') {
+    const w = parseFloat($('#shapeW').value); const h = parseFloat($('#shapeH').value);
+    if (!(w > 0) || !(h > 0)) return;
+    const halfW = (w / 2) / PT_MM; const halfH = (h / 2) / PT_MM;
+    s.x1 = ux - halfW; s.y1 = uy - halfH; s.x2 = ux + halfW; s.y2 = uy + halfH;
+  } else {
+    const sz = parseFloat($('#shapeSize').value);
+    if (!(sz > 0)) return;
+    const half = (sz / 2) / PT_MM;
+    s.x1 = ux - half; s.y1 = uy - half; s.x2 = ux + half; s.y2 = uy + half;
+  }
   drawOverlay();
 }
-for (const id of ['shapeCX', 'shapeCY', 'shapeSize']) $('#' + id).oninput = onShapeSizeInput;
+for (const id of ['shapeCX', 'shapeCY', 'shapeSize', 'shapeW', 'shapeH']) $('#' + id).oninput = onShapeSizeInput;
 function onShapeLineInput() {
   const s = S.shape; if (!s || !S.viewport) return;
   const x1 = parseFloat($('#shapeX1').value); const y1 = parseFloat($('#shapeY1').value);
@@ -3548,11 +3857,11 @@ $('#btnAddShape').onclick = async () => {
   const o = shapeOpts();
   const strokeOn = s.type === 'line' ? true : o.strokeOn;
   const pages = o.all ? Array.from({ length: S.numPages }, (_, i) => i) : [s.page];
-  const label = s.type === 'circle' ? 'krug' : s.type === 'square' ? 'kvadrat' : 'liniju';
+  const label = s.type === 'circle' ? 'krug' : s.type === 'rect' ? 'pravokutnik' : 'liniju';
   await doEdit(`Dodan oblik (${label})${o.all ? ' – sve stranice' : ''}`, async () => {
     for (const pg of pages) {
       E.addShape(S.doc, pg, {
-        type: s.type === 'square' ? 'rect' : s.type === 'circle' ? 'ellipse' : 'line',
+        type: s.type === 'circle' ? 'ellipse' : s.type,
         x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2,
         strokeColor: strokeOn ? o.strokeColor : null,
         strokeWidth: o.strokeWidth,
@@ -5061,6 +5370,21 @@ updateSmartTouchUi();
 // workspace (#pagesWorkspace), with drag & drop reordering.
 let thumbObs = null;
 let pgDragEl = null; // the tile currently being dragged, or null
+/** Displayed size (after /Rotate) of page i, plus a human label like "A4 položeno" / "A3 uspravno". */
+const PAPER_SIZES = [['A0', 841, 1189], ['A1', 594, 841], ['A2', 420, 594], ['A3', 297, 420], ['A4', 210, 297], ['A5', 148, 210], ['A6', 105, 148], ['Letter', 216, 279], ['Legal', 216, 356]];
+function pageFormatInfo(i) {
+  let w = 595; let h = 842;
+  try {
+    const p = S.doc.getPage(i); const sz = p.getSize(); const rot = ((p.getRotation().angle % 360) + 360) % 360;
+    w = sz.width; h = sz.height; if (rot === 90 || rot === 270) { const t = w; w = h; h = t; }
+  } catch (e) { /* keep A4 default */ }
+  const wmm = Math.round(w * PT_MM); const hmm = Math.round(h * PT_MM);
+  const a = Math.min(wmm, hmm); const b = Math.max(wmm, hmm);
+  const hit = PAPER_SIZES.find(([, pa, pb]) => Math.abs(pa - a) <= 4 && Math.abs(pb - b) <= 4);
+  const orient = w > h + 0.5 ? 'položeno' : (h > w + 0.5 ? 'uspravno' : 'kvadrat');
+  const label = (hit ? hit[0] : `${wmm}×${hmm} mm`) + ' ' + orient;
+  return { w, h, wmm, hmm, label };
+}
 function buildPagesGrid() {
   // no document loaded yet: show the "open one or more PDFs" prompt instead of an empty grid
   const hasDoc = !!S.pdfjs;
@@ -5068,7 +5392,7 @@ function buildPagesGrid() {
   $('#pagesWsBar').hidden = !hasDoc;
   $('#pagesWsScroll').hidden = !hasDoc;
   const box = $('#pagesGrid');
-  const gen = ++S.thumbGen;
+  ++S.thumbGen;
   if (thumbObs) { thumbObs.disconnect(); thumbObs = null; }
   if (!hasDoc || S.tab !== 'pages') { if (S.tab !== 'pages') box.dataset.stale = '1'; return; }
   box.dataset.stale = '';
@@ -5089,8 +5413,19 @@ function buildPagesGrid() {
       updatePageSelUi();
     });
     const handle = document.createElement('span'); handle.className = 'pgHandle'; handle.textContent = '⠿'; handle.setAttribute('aria-hidden', 'true');
+    // fixed square frame; the page itself sits centred inside it with its TRUE proportions, so a
+    // landscape page reads as landscape (wide + short) and a portrait page as portrait -- even
+    // before its thumbnail has rendered (the white "paper" placeholder already has the right shape)
+    const info = pageFormatInfo(i);
+    const frame = document.createElement('div'); frame.className = 'pgFrame';
+    const paper = document.createElement('div'); paper.className = 'pgPaper';
+    if (info.w >= info.h) { paper.style.width = '100%'; paper.style.height = (info.h / info.w * 100) + '%'; }
+    else { paper.style.height = '100%'; paper.style.width = (info.w / info.h * 100) + '%'; }
+    frame.appendChild(paper);
     const lbl = document.createElement('span'); lbl.className = 'pgNum'; lbl.textContent = i + 1;
-    d.appendChild(cb); d.appendChild(handle); d.appendChild(lbl);
+    const fmt = document.createElement('span'); fmt.className = 'pgFmt'; fmt.textContent = info.label;
+    fmt.title = `${info.wmm} × ${info.hmm} mm`;
+    d.appendChild(cb); d.appendChild(handle); d.appendChild(frame); d.appendChild(lbl); d.appendChild(fmt);
     d.addEventListener('click', () => { if (!pgDragEl) gotoPage(+d.dataset.i + 1); });
     d.addEventListener('dragstart', (e) => {
       pgDragEl = d; d.classList.add('dragging');
@@ -5104,24 +5439,139 @@ function buildPagesGrid() {
     box.appendChild(d); els.push(d);
   }
   updatePageSelUi();
-  const pdf = S.pdfjs;
-  const render = async (d) => {
-    if (d.dataset.done) return; d.dataset.done = '1';
-    try {
-      const i = +d.dataset.i;
-      const pg = await pdf.getPage(i + 1);
-      if (gen !== S.thumbGen) return;
-      const base = pageViewport(pg, i, { scale: 1 });
-      const vp = pageViewport(pg, i, { scale: 260 / base.width }); // rendered larger than the smallest tile; CSS scales it down crisply
-      const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
-      const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
-      await pg.render({ canvasContext: ctx, viewport: vp }).promise;
-      if (gen !== S.thumbGen) return;
-      d.insertBefore(c, d.firstChild);
-    } catch (e) { /* ignore */ }
-  };
-  thumbObs = new IntersectionObserver((entries) => { for (const en of entries) if (en.isIntersecting) render(en.target); }, { root: $('#pagesWsScroll'), rootMargin: '300px' });
+  // thumbnails already rendered earlier (this or a previous visit / before an edit) appear instantly
+  const keys = thumbKeys();
+  for (const d of els) {
+    const k = keys[+d.dataset.i]; d.dataset.key = k;
+    const c = thumbCacheGet(k); if (c) showThumb(d, c);
+  }
+  thumbObs = new IntersectionObserver((entries) => {
+    for (const en of entries) en.target._vis = en.isIntersecting;
+    pumpThumbs();
+  }, { root: $('#pagesWsScroll'), rootMargin: '250px' });
   els.forEach((d) => thumbObs.observe(d));
+  updateThumbProgress();
+  pumpThumbs();
+}
+
+// ------------------------------------------------------------ thumbnail engine
+// Rendering a page thumbnail with pdf.js costs ~0.1-0.5 s for scanned / CAD pages, so for a
+// 200-page document it matters a lot HOW they are produced:
+//  * cache: each rendered thumbnail is kept, keyed by a fingerprint of the page's content (content
+//    streams, images, size, rotation) -- so revisiting "Stranice", reordering, deleting, undo etc.
+//    reuse them instantly and only pages that really changed are rendered again;
+//  * queue: at most 2 renders at a time, pages on screen first (in reading order), then the rest
+//    of the document in the background, so the first thumbnails appear right away;
+//  * background prefetch: after a document is opened (and its text analysed) thumbnails are
+//    quietly prepared one by one, so "Stranice" is usually already filled when you open it.
+const thumbCache = new Map(); // fingerprint -> canvas (LRU order)
+const THUMB_CACHE_MAX = 450;
+const thumbInflight = new Set();
+let thumbRunning = 0;
+const _thumbKeysByDoc = new WeakMap();
+function thumbCacheGet(k) { const c = thumbCache.get(k); if (c) { thumbCache.delete(k); thumbCache.set(k, c); } return c; }
+function thumbCachePut(k, c) {
+  thumbCache.set(k, c);
+  while (thumbCache.size > THUMB_CACHE_MAX) thumbCache.delete(thumbCache.keys().next().value);
+}
+/** longest side of a thumbnail in canvas pixels (tiles are ~150-170 CSS px) */
+function thumbPx() { return Math.round(180 * Math.min(1.5, Math.max(1, window.devicePixelRatio || 1))); }
+function _fnvSample(bytes, h) {
+  const n = bytes.length; const K = 1024;
+  const take = (a, b) => { for (let i = a; i < b; i++) { h ^= bytes[i]; h = Math.imul(h, 16777619); } };
+  if (n <= 3 * K) take(0, n); else { take(0, K); const m = (n >> 1) - (K >> 1); take(m, m + K); take(n - K, n); }
+  return h >>> 0;
+}
+/** Cheap content fingerprint of page i of `doc` (changes whenever what the page shows can change). */
+function pageThumbKey(doc, i) {
+  const { PDFName, PDFArray, PDFDict } = window.PDFLib;
+  const ctx = doc.context; const p = doc.getPage(i); const node = p.node;
+  const parts = []; let h = 2166136261;
+  const bytesOf = (s) => (s && (s.contents || (typeof s.getContents === 'function' ? s.getContents() : null))) || null;
+  const stream = (ref) => {
+    let o = null; try { o = ctx.lookup(ref); } catch (e) { o = null; }
+    const b = bytesOf(o); parts.push(String(ref)); if (b) { parts.push(b.length); h = _fnvSample(b, h); }
+  };
+  try {
+    const c = node.get(PDFName.of('Contents'));
+    let ca = c; try { if (c && !(c instanceof PDFArray)) ca = ctx.lookup(c); } catch (e) { ca = c; }
+    if (ca instanceof PDFArray) for (let k = 0; k < ca.size(); k++) stream(ca.get(k)); else if (c) stream(c);
+    const res = node.Resources ? node.Resources() : null;
+    let xo = null; try { xo = res ? res.lookup(PDFName.of('XObject')) : null; } catch (e) { xo = null; }
+    if (xo instanceof PDFDict) for (const [k, v] of xo.entries()) { parts.push(k.toString(), String(v)); let o = null; try { o = ctx.lookup(v); } catch (e) { o = null; } const b = bytesOf(o); if (b) parts.push(b.length); }
+    const mb = p.getMediaBox(); parts.push(p.getRotation().angle, mb.x, mb.y, mb.width, mb.height);
+  } catch (e) { parts.push('err' + i + ':' + Math.random()); }
+  return thumbPx() + '|' + parts.join('|') + '#' + h;
+}
+function thumbKeys() {
+  let a = _thumbKeysByDoc.get(S.doc);
+  if (!a || a.length !== S.numPages) {
+    a = []; for (let i = 0; i < S.numPages; i++) a.push(pageThumbKey(S.doc, i));
+    _thumbKeysByDoc.set(S.doc, a);
+  }
+  return a;
+}
+function showThumb(d, src) {
+  const paper = d.querySelector('.pgPaper'); if (!paper) return;
+  const old = paper.querySelector('canvas'); if (old) old.remove();
+  const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+  c.getContext('2d').drawImage(src, 0, 0);
+  paper.appendChild(c); d.dataset.done = '1';
+}
+function updateThumbProgress() {
+  const el = $('#pagesWsThumbProg'); if (!el) return;
+  if (S.tab !== 'pages' || !S.doc) { el.hidden = true; return; }
+  const keys = thumbKeys(); let done = 0; for (const k of keys) if (thumbCache.has(k)) done++;
+  el.hidden = done >= keys.length;
+  el.textContent = `· pregledi ${done}/${keys.length}`;
+}
+/** Picks the next page to render: visible tiles first, then the rest of the grid, then (in the
+ * background, when nothing else is going on) every other page of the document. */
+function nextThumbJob() {
+  if (!S.doc || !S.pdfjs) return -1;
+  const keys = thumbKeys();
+  const want = (i) => { const k = keys[i]; return k && !thumbCache.has(k) && !thumbInflight.has(k); };
+  if (S.tab === 'pages') {
+    let rest = -1;
+    for (const d of $('#pagesGrid').children) {
+      const i = +d.dataset.i; if (!want(i)) continue;
+      if (d._vis) return i; if (rest < 0) rest = i;
+    }
+    return rest;
+  }
+  if (S.busy || !S.analysisDone || S.snipMode) return -1; // background only when the app is idle
+  for (let i = 0; i < keys.length; i++) if (want(i)) return i;
+  return -1;
+}
+function pumpThumbs() {
+  const max = S.tab === 'pages' ? 2 : 1;
+  while (thumbRunning < max) {
+    const i = nextThumbJob(); if (i < 0) return;
+    renderThumb(i);
+  }
+}
+async function renderThumb(i) {
+  const doc = S.doc; const pdf = S.pdfjs; const key = thumbKeys()[i];
+  thumbInflight.add(key); thumbRunning++;
+  try {
+    const pg = await pdf.getPage(i + 1);
+    const p = doc.getPage(i); const mb = p.getMediaBox();
+    const box = [mb.x, mb.y, mb.x + mb.width, mb.y + mb.height];
+    const base = buildViewport(box, 1, p.getRotation().angle);
+    const vp = buildViewport(box, thumbPx() / Math.max(base.width, base.height), p.getRotation().angle);
+    const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+    try { pg.cleanup(); } catch (e) { /* ignore */ } // frees the decoded images of this page
+    thumbCachePut(key, c); // valid even if the document changed meanwhile: the key describes the content
+    if (S.tab === 'pages') for (const d of $('#pagesGrid').children) if (d.dataset.key === key) showThumb(d, c);
+  } catch (e) { /* document replaced (pdf.js doc destroyed) or render failed -- skip */ }
+  finally {
+    thumbInflight.delete(key); thumbRunning--;
+    updateThumbProgress();
+    // background work yields generously so it never makes the rest of the app feel sluggish
+    setTimeout(pumpThumbs, S.tab === 'pages' ? 0 : 60);
+  }
 }
 function markPagesGrid(scroll) {
   const box = $('#pagesGrid');
@@ -5466,6 +5916,8 @@ window.addEventListener('keydown', (e) => {
   else if (e.key === 'Delete' && S.sel && S.tab === 'sel') { e.preventDefault(); deleteSel(); }
   else if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) && S.sel && S.sel.canMove && S.tab === 'sel') {
     e.preventDefault(); nudge(e.key.slice(5).toLowerCase(), e.shiftKey ? 5 : 1);
+  } else if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) && S.tab === 'add' && addMode === 'text' && S.addPos) {
+    e.preventDefault(); nudgeAddPos(e.key.slice(5).toLowerCase(), e.shiftKey ? 5 : 1);
   }
 });
 window.addEventListener('beforeunload', (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
@@ -5476,6 +5928,7 @@ window.__app = {
   healPrintArtifacts, smoothForAnalysis, findStampCircle, restrictToCircleCluster,
   keepOnlyLargestComponent, applyZoneOverrides, readBlueSettings,
   setSmartTool: (t) => setSmartTool(t), getSmartTool: () => smartTool,
+  addBoxHit: (x, y) => addBoxHit(x, y), addBoxGeom: () => addBoxGeom(),
 };
 setTab('sel'); updateButtons(); updateFindMode();
 
