@@ -260,7 +260,7 @@ dialog li { margin: 5px 0; }
 <body>
 <header class="top">
   <div class="brand">PDF uređivač <small>radi potpuno offline</small></div>
-  <button class="btn" id="btnOpen" type="button">Otvori PDF…</button>
+  <button class="btn" id="btnOpen" type="button" title="Možete odabrati i više PDF-ova odjednom – spojit će se u jedan dokument, redoslijedom odabira">Otvori PDF…</button>
   <span class="file-name" id="fileName" title=""></span>
   <span class="spacer"></span>
   <button class="btn" id="btnUndo" type="button" disabled title="Ctrl+Z">Poništi</button>
@@ -268,7 +268,7 @@ dialog li { margin: 5px 0; }
   <label class="suffix">Dodatak nazivu <input type="text" id="suffix" value=" (izmijenjeno)"></label>
   <button class="btn primary" id="btnSave" type="button" disabled title="Ctrl+S">Spremi kao novu datoteku</button>
   <button class="btn" id="btnHelp" type="button" title="Upute i prečaci">?</button>
-  <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
+  <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
 </header>
 
 <main>
@@ -635,12 +635,17 @@ dialog li { margin: 5px 0; }
       <div id="imgFixBody" hidden>
         <div class="step" id="imgStep2">
           <div class="step-h"><span class="step-n">2</span> Automatsko čišćenje <span class="step-tag">automatski</span></div>
-          <p class="hint">Aplikacija postupno briše pozadinu: prvo papir, zatim crni tisak i linije, na kraju blijedu plavu. Boja tinte ostaje izvorna. Najbolje radi za <b>plavu</b> tintu; prva faza (brisanje papira) radi i za crni potpis.</p>
+          <p class="hint" id="imgStep2Hint">Aplikacija postupno briše pozadinu: prvo papir, zatim crni tisak i linije, na kraju blijedu plavu. Boja tinte ostaje izvorna. Najbolje radi za <b>plavu</b> tintu; prva faza (brisanje papira) radi i za crni potpis.</p>
+          <div class="lbl" style="margin:0 0 3px">Vrsta slike</div>
+          <div class="erasemode seg" style="margin:0 0 8px">
+            <button class="btn small" id="imgInkBlue" type="button">Plava tinta (u boji)</button>
+            <button class="btn small" id="imgInkMono" type="button">Crno-bijela (ispis, fotokopija)</button>
+          </div>
           <div class="erasemode seg">
             <button class="btn small" id="imgProcModeSmart" type="button" data-mode="smart">Uključeno</button>
             <button class="btn small" id="imgProcModeManual" type="button" data-mode="manual">Isključeno</button>
           </div>
-          <p class="hint" id="imgAutoOffHint" style="margin:8px 0 0">Isključeno – vidi se izvorna slika. Uključite za plavu tintu, a za crni potpis uključite i držite klizač u fazi 1 (do 40). Za logo u boji ostavite isključeno i višak uklonite u koraku 3.</p>
+          <p class="hint" id="imgAutoOffHint" style="margin:8px 0 0">Isključeno – vidi se izvorna slika. Uključite za plavu tintu; za crni potpis s crno-bijelog ispisa ili fotokopije odaberite gore „Crno-bijela” i uključite. Za logo u boji ostavite isključeno i višak uklonite u koraku 3.</p>
 
           <div id="imgSmartBox" hidden>
             <div class="field" style="margin:12px 0 0">
@@ -650,22 +655,24 @@ dialog li { margin: 5px 0; }
               <div class="phase-now" id="imgBlueLevelPhase"></div>
             </div>
             <p class="hint" style="margin:6px 0 10px">Pomičite klizač polako udesno i gledajte sliku u sredini – svaki korak briše malo više. Stanite kad pozadina nestane, a tinta je još cijela. Ako nestaje dio pečata/potpisa, vratite ulijevo. Strelicama ← → na tipkovnici klizač se pomiče za po 1.</p>
-            <div class="btnrow" style="margin:0 0 4px">
+            <div class="btnrow" style="margin:0 0 4px" id="imgBlueEyedropRow">
               <button class="btn small" id="imgBlueEyedrop" type="button">💧 Uzorkuj plavu s fotografije</button>
             </div>
-            <p class="hint" style="margin:0 0 10px">Ne znate koju jačinu? Kliknite gumb, pa kliknite na najsvjetliji dio tinte na slici – jačina se namjesti sama.</p>
+            <p class="hint" style="margin:0 0 10px" id="imgBlueEyedropHint">Ne znate koju jačinu? Kliknite gumb, pa kliknite na najsvjetliji dio tinte na slici – jačina se namjesti sama.</p>
 
             <details class="fold" id="imgAdvFold">
               <summary>Napredne postavke <span class="muted">(obično ih ne treba mijenjati)</span></summary>
               <div class="fold-body">
-                <label class="check"><input type="checkbox" id="imgSmartRemovePrint" checked> Ukloni otisnuti tekst i linije</label>
-                <p class="hint sub">Briše crni tiskani tekst i linije tablice; gdje su prelazile preko pečata/potpisa, prekid se popuni bojom tinte.</p>
-                <label class="check"><input type="checkbox" id="imgSmartKeepLargest" checked> Zadrži samo najveću cjelinu</label>
-                <p class="hint sub">Ako ima više odvojenih plavih tragova (drugi pečat, mrlja), ostaje samo najveći.</p>
+                <label class="check"><input type="checkbox" id="imgSmartRemovePrint" checked> <span id="imgRemovePrintLbl">Ukloni otisnuti tekst i linije</span></label>
+                <p class="hint sub" id="imgRemovePrintHint">Briše crni tiskani tekst i linije tablice; gdje su prelazile preko pečata/potpisa, prekid se popuni bojom tinte.</p>
+                <label class="check"><input type="checkbox" id="imgSmartKeepLargest" checked> Ukloni sitne odvojene mrlje</label>
+                <p class="hint sub">Briše samo sitne točkice i mrlje koje nisu dio potpisa/pečata. Svi dijelovi potpisa ostaju, i kad nisu međusobno spojeni (odvojene riječi, slova, točka na „i”).</p>
                 <label class="check"><input type="checkbox" id="imgSmartSmooth" checked> Blago zaglađivanje</label>
                 <p class="hint sub">Smanjuje zrnatost fotografije – rubovi tinte su mekši.</p>
+                <div id="imgFindCircleRow">
                 <label class="check"><input type="checkbox" id="imgSmartFindCircle" checked> Prepoznaj okrugli pečat</label>
                 <p class="hint sub">Zadrži samo okrugli pečat i ono što je s njim spojeno (npr. potpis preko njega). Ako krug nije pronađen, ništa se ne mijenja.</p>
+                </div>
                 <div class="row auto" style="gap:10px;margin-top:8px">
                   <div>
                     <div class="hint" style="margin:0 0 3px">Original</div>
@@ -698,7 +705,8 @@ dialog li { margin: 5px 0; }
             <button class="tool" id="imgSmartToolRestore" type="button" data-tool="restore"><b>Vrati</b><span>kistom vratite tintu koja je nestala</span></button>
             <button class="tool" id="imgSmartToolZone" type="button" data-tool="zone"><b>Područje s jačinom</b><span>jače ili blaže brisanje samo u jednom dijelu</span></button>
             <button class="tool" id="imgSmartToolBridge" type="button" data-tool="bridge"><b>Spoji prekid</b><span>povežite prekinut potez ili rub pečata</span></button>
-            <button class="tool wide" id="imgSmartToolRecolor" type="button" data-tool="recolor"><b>Preboji u plavo</b><span>kistom pretvorite crni ili sivi dio potpisa u plavu boju ostatka potpisa</span></button>
+            <button class="tool" id="imgSmartToolCrop" type="button" data-tool="crop"><b>Zadrži samo odabrano</b><span>okvirom označite potpis, ostalo se briše</span></button>
+            <button class="tool" id="imgSmartToolRecolor" type="button" data-tool="recolor"><b>Preboji u plavo</b><span>kistom pretvorite crni ili sivi dio potpisa u plavu</span></button>
           </div>
           <div class="toolpanel" id="imgToolPanel" hidden>
             <p class="hint" style="margin:0 0 8px" id="imgSmartToolHintText"></p>
@@ -740,11 +748,9 @@ dialog li { margin: 5px 0; }
 
         <div class="step" id="imgStep4">
           <div class="step-h"><span class="step-n">4</span> Završite i spremite</div>
-          <label class="check"><input type="checkbox" id="imgTrim" checked> Obreži prazan rub oko potpisa</label>
-          <div class="field" id="imgTrimPadRow" style="margin:0 0 6px 26px">
-            <label for="imgTrimPad" class="lbl" style="margin-bottom:0">Razmak oko ruba (px)</label>
-            <input type="range" id="imgTrimPad" min="0" max="40" value="6">
-          </div>
+          <!-- the empty margin around the signature is always trimmed automatically (with a small
+               automatic padding); the switch stays only as an internal flag, not shown to the user -->
+          <input type="checkbox" id="imgTrim" checked hidden>
           <div class="row auto" style="gap:8px;flex-wrap:wrap" id="imgTintRow">
             <label class="check" style="margin:0"><input type="checkbox" id="imgTint"> Preboji u</label>
             <input type="color" id="imgTintColor" value="#1a2a8f" aria-label="Boja potpisa">
@@ -887,7 +893,7 @@ dialog li { margin: 5px 0; }
     <div class="empty" id="empty">
       <div class="card">
         <h2>Otvorite PDF dokument</h2>
-        <p>Povucite datoteku ovdje ili kliknite gumb. Datoteka se ne šalje nigdje – sve se događa na vašem računalu.</p>
+        <p>Povucite datoteku ovdje ili kliknite gumb. Možete odabrati (ili povući) i više PDF-ova odjednom – spojit će se u jedan dokument, redoslijedom kojim ste ih odabrali. Datoteke se ne šalju nigdje – sve se događa na vašem računalu.</p>
         <ul>
           <li>Tražite, zamijenite, obrišite, obojite ili pomaknite bilo koji tekst – i samo njegov dio</li>
           <li>Dodajte novi tekst, potpis ili pečat (PNG s prozirnom pozadinom) na točno odabrano mjesto</li>
@@ -901,17 +907,27 @@ dialog li { margin: 5px 0; }
   </section>
 </main>
 
+<dialog id="escDialog" aria-labelledby="escDialogTitle">
+  <h3 id="escDialogTitle">Izlaz iz alata</h3>
+  <p id="escDialogMsg" style="margin:0 0 16px"></p>
+  <div class="row auto" style="gap:8px;justify-content:flex-end">
+    <button class="btn" type="button" id="escCancel">Odustani</button>
+    <button class="btn danger" type="button" id="escDiscard">Odbaci</button>
+    <button class="btn primary" type="button" id="escSave">Spremi</button>
+  </div>
+</dialog>
 <dialog id="help">
   <h3>Kratke upute</h3>
   <ul>
     <li><b>Edit tekst</b> – tražite tekst u cijelom dokumentu (po želji samo određenu boju) i zamijenite ga, obrišite ili mu promijenite izgled; ili kliknite natpis na planu: uredite dio teksta (proširite/suzite označeno u polju), promijenite boju/veličinu/podebljanje (i samo označenog dijela), povucite ga mišem ili ga pomaknite strelicama, dupliciraj ili obriši.</li>
     <li><b>Dodaj</b> – novi tekst na odabranom mjestu (po želji kopirajte izgled trenutačno označenog natpisa; podloga, više fontova, datum, žigovi) ili novi oblik (krug, pravokutnik, linija – s obrubom i/ili ispunom); povucite mišem po planu da ga nacrtate, po potrebi na svim stranicama.</li>
+    <li><b>Slika · crno-bijelo</b> – potpis s crno-bijelog ispisa, fotokopije ili skena (i fotografiran mobitelom): aplikacija to prepozna sama (ili u koraku 2 odaberite „Crno-bijela”), ukloni sivu zrnatu pozadinu, sjene i linije tablice i ostavi samo poteze potpisa. Alatom „Zadrži samo odabrano” okvirom označite koji potpis želite (ostalo, npr. datum, nestaje); u koraku 4 ga po želji prebojite u plavo.</li>
     <li><b>Slika</b> – uvezite sliku potpisa/pečata/loga (ili isijecite dio izravno s trenutačno otvorene PDF stranice povlačenjem pravokutnika) i obradite je jednim od dva podalata: <b>Ručno brisanje</b> (gumica – prijeđite mišem preko dijela koji želite ukloniti, bez obzira na boju) ili <b>Pametno brisanje</b> (izdvaja stvarne piksele plave tinte – kemijska olovka, pečat – s fotografije i zadržava im izvornu boju, uz podesive RGB/HSV pragove, mekoću ruba, uklanjanje šuma i predloške); zatim po želji preboji preostalo i obreži prazan rub. Pregled i mala usporedba original/maska prikazuju se uživo. Kad završite, spremite je za karticu „Potpis”.</li>
     <li><b>Potpis</b> – pripremljenu sliku samo pozicionirate na dokument: veličina, kut, prozirnost; povuci mišem.</li>
     <li><b>Stranice</b> – sličice, okretanje, premještanje, dupliciranje, umetanje prazne, brisanje (pojedinačno ili više odjednom), dodavanje iz jednog ili više drugih PDF-ova, izdvajanje raspona.</li>
     <li><b>Paket</b> – ista zamjena na više PDF-ova odjednom.</li>
   </ul>
-  <p><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> poništi / ponovi · <kbd>Ctrl</kbd>+<kbd>S</kbd> spremi · <kbd>Ctrl</kbd>+<kbd>F</kbd> traži · <kbd>Del</kbd> briše označeni natpis · strelice pomiču natpis · <kbd>Esc</kbd> poništi odabir</p>
+  <p><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> poništi / ponovi · <kbd>Ctrl</kbd>+<kbd>S</kbd> spremi · <kbd>Ctrl</kbd>+<kbd>F</kbd> traži · <kbd>Del</kbd> briše označeni natpis · strelice pomiču natpis · <kbd>Esc</kbd> izlaz iz aktivnog alata (ako postoji nešto nespremljeno, pita želite li to spremiti)</p>
   <p class="muted">Ograničenja: ne radi na skeniranim PDF-ovima (slika bez teksta), PDF-ovima zaštićenim lozinkom i tekstu pretvorenom u linije. Ako natpis koristi znakove kojih nema u ugrađenom fontu, za te se znakove koristi Arial-kompatibilan font.</p>
   <form method="dialog"><button class="btn primary">Zatvori</button></form>
 </dialog>
@@ -2280,6 +2296,9 @@ function setBusy(on, text) {
   S.busy = on;
   $('#busy').hidden = !on;
   if (text) $('#busyText').textContent = text;
+  // buttons are disabled while busy -- re-enable them the moment work ends (e.g. a PDF opened
+  // straight from the "Stranice" tab used to leave all its tools grey until you switched tabs)
+  if (!on && typeof updateButtons === 'function') updateButtons();
 }
 
 // user-space <-> display conversions
@@ -2302,9 +2321,10 @@ function visibleCenterUser() {
 }
 
 // ------------------------------------------------------------ loading
+/** Opens a PDF as the current document. Returns true when it was opened. */
 async function openBytes(bytes, name, handle) {
-  if (S.dirty && !window.confirm('Imate promjene koje nisu spremljene. Otvoriti drugi dokument bez spremanja?')) return;
-  if (String.fromCharCode(...bytes.slice(0, 5)) !== '%PDF-') { toast('Ovo ne izgleda kao PDF datoteka.', 'err'); return; }
+  if (S.dirty && !window.confirm('Imate promjene koje nisu spremljene. Otvoriti drugi dokument bez spremanja?')) return false;
+  if (String.fromCharCode(...bytes.slice(0, 5)) !== '%PDF-') { toast('Ovo ne izgleda kao PDF datoteka.', 'err'); return false; }
   for (const t of document.querySelectorAll('.toast.warn')) t.remove(); // notices about the previous document
   setBusy(true, 'Otvaram dokument…');
   try {
@@ -2317,11 +2337,24 @@ async function openBytes(bytes, name, handle) {
     $('#empty').hidden = true;
     renderHistory(); updateButtons(); updateStatus();
     docOpenNotices();
+    return true;
   } catch (err) {
     console.error(err);
     const enc = /encrypt/i.test(String(err && err.message));
     toast(enc ? 'Dokument je zaštićen lozinkom/šifriran – takve PDF-ove aplikacija ne može uređivati.' : 'Dokument se ne može otvoriti: ' + (err && err.message), 'err', 8000);
+    return false;
   } finally { setBusy(false); }
+}
+const isPdfFile = (f) => !!f && (f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''));
+/** Opens one or more PDF files: the first becomes the document, the pages of every further file are
+ * appended to it (in the order given) as one undoable step. Used by every "open PDF" entry point. */
+async function openPdfFiles(files, handle) {
+  const list = Array.from(files || []).filter(isPdfFile);
+  if (!list.length) { if (files && files.length) toast('Odabrane datoteke nisu PDF dokumenti.', 'err'); return false; }
+  const [first, ...rest] = list;
+  const ok = await openBytes(new Uint8Array(await first.arrayBuffer()), first.name, handle || null);
+  if (ok && rest.length) await appendPdfFiles(rest, { stayOnPage: true });
+  return ok;
 }
 
 // ------------------------------------------------------------ document diagnostics (why can't I edit this?)
@@ -3910,8 +3943,12 @@ async function setImageFromBlob(blob, name, opts) {
   // Step 2 (automatic cleaning) starts ON only when the photo actually contains blue ink -- on a black
   // signature or a coloured logo it would erase everything, which would baffle a beginner.
   const hasBlue = photoHasBlueInk(loaded.im);
+  const isMono = !hasBlue && photoIsMono(loaded.im); // black & white print / copy / scan
   setSmartTool('none');
-  setImgProcMode(hasBlue ? 'smart' : 'manual', true);
+  setImgInkMode(isMono ? 'mono' : 'blue', true);
+  $('#imgBlueLevel').value = isMono ? MONO_DEFAULT_LEVEL : 72;
+  syncLevelLabels();
+  setImgProcMode(hasBlue || isMono ? 'smart' : 'manual', true);
   processImg(true);
   syncImgTabs(); // must run after processImg(true) has set S.img.canvas, not before
   if (imgProcMode === 'smart') renderBlueThumbOrig();
@@ -3922,6 +3959,7 @@ async function setImageFromBlob(blob, name, opts) {
   updateEraseUi();
   updateStatus(); drawOverlay(); updateButtons();
   if (hasBlue) toast('Prepoznata je plava tinta – automatsko čišćenje (korak 2) je uključeno. Provjerite rezultat u sredini.', 'ok', 6000);
+  else if (isMono) toast('Prepoznata je crno-bijela slika – uključeno je čišćenje za crno-bijeli potpis (korak 2). Višak (npr. datum) uklonite alatom „Zadrži samo odabrano” ili „Obriši” u koraku 3.', 'ok', 8000);
   else toast('Plava tinta nije prepoznata – automatsko čišćenje je isključeno. Višak uklonite u koraku 3 (ručna dorada).', '', 7000);
 }
 
@@ -3954,6 +3992,7 @@ function processImg(first) {
     else if (a.type === 'restore') applyRestoreStrokes(x, w, h, im, [a]);
     else if (a.type === 'bridge') applyBridgeActions(x, w, h, im, [a]);
     else if (a.type === 'recolor') applyRecolorStrokes(x, w, h, im, [a]);
+    else if (a.type === 'crop') { x.save(); x.globalCompositeOperation = 'destination-in'; x.fillRect(a.x0, a.y0, a.x1 - a.x0, a.y1 - a.y0); x.restore(); }
   }
   if ($('#imgTint').checked) {
     // step 4 "Preboji u": one colour for everything kept (alpha untouched), in both modes
@@ -3965,7 +4004,8 @@ function processImg(first) {
     const dd = x.getImageData(0, 0, w, h).data;
     for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) if (dd[(yy * w + xx) * 4 + 3] > 12) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
     if (x1 >= x0 && y1 >= y0) {
-      const pad = parseInt($('#imgTrimPad').value, 10) || 0;
+      // automatic breathing room around the ink: ~3 % of the signature's size, 4-24 px
+      const pad = clamp(Math.round(0.03 * Math.max(x1 - x0 + 1, y1 - y0 + 1)), 4, 24);
       x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
       const c2 = document.createElement('canvas'); c2.width = x1 - x0 + 1; c2.height = y1 - y0 + 1;
       c2.getContext('2d').drawImage(c, x0, y0, c2.width, c2.height, 0, 0, c2.width, c2.height);
@@ -4236,11 +4276,11 @@ function drawCursorOv() {
     }
     ringAt(ctx, x, y, r, 'rgba(230,160,0,.95)');
     ctx.restore();
-  } else if (smartTool === 'zone') {
+  } else if (smartTool === 'zone' || smartTool === 'crop') {
     const k = ovK();
     ctx.save();
-    ctx.setLineDash([6 * k, 4 * k]); ctx.strokeStyle = 'rgba(33,150,243,.95)'; ctx.lineWidth = 1.6 * k;
-    if (smartDrag && smartDrag.kind === 'zone') {
+    ctx.setLineDash([6 * k, 4 * k]); ctx.strokeStyle = smartTool === 'crop' ? 'rgba(46,160,67,.95)' : 'rgba(33,150,243,.95)'; ctx.lineWidth = 1.6 * k;
+    if (smartDrag && smartDrag.kind === smartTool) {
       ctx.strokeRect(Math.min(smartDrag.x0, x), Math.min(smartDrag.y0, y), Math.abs(x - smartDrag.x0), Math.abs(y - smartDrag.y0));
     } else {
       ctx.beginPath(); ctx.moveTo(x - 8 * k, y); ctx.lineTo(x + 8 * k, y); ctx.moveTo(x, y - 8 * k); ctx.lineTo(x, y + 8 * k); ctx.stroke();
@@ -4448,6 +4488,66 @@ function keepOnlyLargestComponent(bin, w, h) {
   return out;
 }
 
+/** Removes only small stray specks/blobs that are NOT part of the signature/stamp, keeping every real
+ * part of it even when the parts are not connected to each other (separate words, a detached letter,
+ * the dot of an "i", a stamp's inner text). How a component is judged (8-connectivity):
+ *  - "main" parts: at least 3 % of the largest component's area (min 40 px). They form the ink cluster,
+ *    grown outward from the largest part across gaps up to ~18 % of the image's longer side (word
+ *    spacing); a main part farther away than that is a separate mark -- dropped unless it is itself
+ *    substantial (>= 25 % of the largest part, e.g. a second stamp the user may want).
+ *  - small parts (dots, accents, short strokes): kept when they lie close to the kept cluster
+ *    (within ~3.5 % of the image size, or a quarter of the writing's height), dropped when they float
+ *    on their own -- that is the noise. */
+function removeStrayComponents(bin, w, h) {
+  const n = w * h;
+  const lab = new Int32Array(n); // 0 = none, k+1 = component k
+  const comps = [];
+  let sx = new Int32Array(4096); let sy = new Int32Array(4096);
+  const grow = () => { const a = new Int32Array(sx.length * 2); a.set(sx); sx = a; const b = new Int32Array(sy.length * 2); b.set(sy); sy = b; };
+  for (let i = 0; i < n; i++) {
+    if (!bin[i] || lab[i]) continue;
+    const id = comps.length + 1;
+    let sp = 0; let area = 0; let x0 = w; let y0 = h; let x1 = 0; let y1 = 0;
+    const push = (x, y) => { if (sp >= sx.length) grow(); sx[sp] = x; sy[sp] = y; sp++; };
+    push(i % w, (i / w) | 0); lab[i] = id;
+    while (sp > 0) {
+      sp--; const x = sx[sp]; const y = sy[sp];
+      area++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      const xa = x > 0 ? x - 1 : 0; const xb = x < w - 1 ? x + 1 : x;
+      const ya = y > 0 ? y - 1 : 0; const yb = y < h - 1 ? y + 1 : y;
+      for (let yy = ya; yy <= yb; yy++) for (let xx = xa; xx <= xb; xx++) {
+        const ni = yy * w + xx;
+        if (!bin[ni] || lab[ni]) continue;
+        lab[ni] = id; push(xx, yy);
+      }
+    }
+    comps.push({ area, x0, y0, x1, y1, keep: false });
+  }
+  if (comps.length <= 1) return bin;
+  let A = 0; let big = 0;
+  comps.forEach((c, k) => { if (c.area > A) { A = c.area; big = k; } });
+  const L = Math.max(w, h);
+  const mainMin = Math.max(40, A * 0.03);
+  const bh = comps[big].y1 - comps[big].y0 + 1; // height of the main stroke group (writing size)
+  const gapMain = Math.max(30, L * 0.18); const gapSmall = Math.max(8, L * 0.035, bh * 0.25);
+  const gap = (a, b) => Math.max(0, Math.max(a.x0, b.x0) - Math.min(a.x1, b.x1), Math.max(a.y0, b.y0) - Math.min(a.y1, b.y1));
+  // grow the cluster of main parts from the largest one
+  comps[big].keep = true;
+  const kept = [comps[big]];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const c of comps) {
+      if (c.keep || c.area < mainMin) continue;
+      if (c.area >= A * 0.25 || kept.some((k) => gap(c, k) <= gapMain)) { c.keep = true; kept.push(c); changed = true; }
+    }
+  }
+  for (const c of comps) if (!c.keep && c.area < mainMin && kept.some((k) => gap(c, k) <= gapSmall)) c.keep = true;
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i++) if (lab[i] && comps[lab[i] - 1].keep) out[i] = 1;
+  return out;
+}
+
 /** Runs the full pipeline (score -> binarize -> opening -> closing -> small-component cleanup ->
  * optional largest-only filter) and writes the resulting alpha AND a properly un-mixed ink colour
  * straight into `px` (RGBA Uint8ClampedArray). Returns the final 0/1 mask (for the mask-preview
@@ -4468,7 +4568,7 @@ function applyBlueExtract(px, w, h, o) {
   if (o.open > 0) bin = morphOpen(bin, w, h, o.open);
   if (o.close > 0) bin = morphClose(bin, w, h, o.close);
   if (o.minArea > 0) bin = removeSmallComponents(bin, w, h, o.minArea);
-  if (o.keepLargest) bin = keepOnlyLargestComponent(bin, w, h);
+  if (o.keepLargest) bin = removeStrayComponents(bin, w, h); // (setting name kept for compatibility)
   for (let i = 0, p = 0; i < n; i++, p += 4) {
     // Closing can bridge bin[i] to 1 across a gap even though this exact pixel scored 0 (it sits
     // between two real ink pixels, e.g. a thin break mid-stroke). That bridging must never overrule
@@ -4907,6 +5007,33 @@ function applyBridgeActions(ctx, w, h, im, list) {
 // file's colour-based blue-ink extraction pipeline, "Automatsko brisanje") and 'manual' (plain eraser
 // brush, "Ručno brisanje", wired in 50_image.js).
 let imgProcMode = 'manual';
+let imgInkMode = 'blue'; // 'blue' = coloured (blue) ink pipeline, 'mono' = black & white photo / copy (56_mono.js)
+/** "Vrsta slike" in step 2: blue ink (colour) or black & white (scan / photocopy). Each has its own
+ * cleaning and its own sensible default strength. */
+function setImgInkMode(m, silent) {
+  const changed = m !== imgInkMode;
+  imgInkMode = m;
+  $('#imgInkBlue').classList.toggle('on', m === 'blue');
+  $('#imgInkMono').classList.toggle('on', m === 'mono');
+  const mono = m === 'mono';
+  for (const el of document.querySelectorAll('.phasebar')) el.hidden = mono;
+  $('#imgBlueEyedropRow').hidden = mono;
+  $('#imgBlueEyedropHint').hidden = mono;
+  $('#imgFindCircleRow').hidden = mono;
+  $('#imgRemovePrintLbl').textContent = mono ? 'Ukloni linije tablice' : 'Ukloni otisnuti tekst i linije';
+  $('#imgRemovePrintHint').textContent = mono
+    ? 'Briše duge ravne linije (i malo nakošene, kao na fotografiji); gdje ih je potpis presijecao, potez se spoji.'
+    : 'Briše crni tiskani tekst i linije tablice; gdje su prelazile preko pečata/potpisa, prekid se popuni bojom tinte.';
+  $('#imgStep2Hint').innerHTML = mono
+    ? 'Za <b>crno-bijeli</b> ispis, fotokopiju ili sken: aplikacija uspoređuje svaku točku sa sivom pozadinom oko nje, uklanja zrnatost i linije tablice i ostavlja samo tamne poteze potpisa. Rezultat je tamnosiv/crn – u koraku 4 ga po želji prebojite u plavo.'
+    : 'Aplikacija postupno briše pozadinu: prvo papir, zatim crni tisak i linije, na kraju blijedu plavu. Boja tinte ostaje izvorna. Najbolje radi za <b>plavu</b> tintu; prva faza (brisanje papira) radi i za crni potpis.';
+  if (changed && !silent) $('#imgBlueLevel').value = mono ? MONO_DEFAULT_LEVEL : 72;
+  if (mono && blueEyedrop) setBlueEyedrop(false);
+  syncLevelLabels(); updateImgWsBar();
+  if (!silent) procDeb();
+}
+$('#imgInkBlue').onclick = () => setImgInkMode('blue');
+$('#imgInkMono').onclick = () => setImgInkMode('mono');
 let blueEyedrop = false;
 
 /** Step 2 switch. 'smart' = automatic cleaning on, 'manual' = off (original photo; only step-3 tools).
@@ -4996,6 +5123,7 @@ function levelFromBlueStrictness(b) { return Math.round(PHASE_B_END + (clamp(b, 
 function levelPhaseName(level) {
   const L = +level;
   if (L <= 0) return 'izvorna slika – ništa se ne briše';
+  if (imgInkMode === 'mono') return L < 20 ? 'crno-bijelo · zadržava i najbljeđe poteze (ostaje više zrnatosti)' : L <= 50 ? 'crno-bijelo · uravnoteženo: čista pozadina, cijeli potezi' : 'crno-bijelo · jako čišćenje (tanki i blijedi potezi mogu nestati)';
   if (L <= PHASE_A_END) return 'faza 1 · briše se papir (od najsvjetlijeg dijela); sve crte ostaju, i crne';
   if (L <= PHASE_B_END) return 'faza 2 · postupno nestaje crno i sivo (tisak, linije); plavo ostaje';
   return 'faza 3 · ostaje samo plavo; udesno se briše i blijeda plava';
@@ -5039,6 +5167,7 @@ function removePaper(px, w, h, paperT, paper) {
  * the thumbnail. `paperSrc` (+ its size) = where to measure the paper level (the whole photo when
  * `px` is only a zone's crop). */
 function cleanAtLevel(px, w, h, level, o, paperSrc, pw, ph) {
+  if (o.mono) return monoClean(px, w, h, level, o); // black & white photo/scan: see 56_mono.js
   const phs = levelPhases(level);
   if (phs.disabled) return new Uint8Array(w * h).fill(1);
   const paper = paperLevel(paperSrc || px, pw || w, ph || h);
@@ -5076,7 +5205,7 @@ function cleanAtLevel(px, w, h, level, o, paperSrc, pw, ph) {
 function readBlueSettings() {
   const level = parseFloat($('#imgBlueLevel').value) || 0;
   return {
-    level, disabled: level <= 0,
+    level, disabled: level <= 0, mono: imgInkMode === 'mono',
     removePrint: $('#imgSmartRemovePrint').checked,
     smooth: $('#imgSmartSmooth').checked,
     keepLargest: $('#imgSmartKeepLargest').checked,
@@ -5091,7 +5220,6 @@ function syncLevelLabels() {
   $('#imgZoneLevelV').textContent = $('#imgZoneLevel').value;
 }
 $('#imgBlueLevel').oninput = () => { syncLevelLabels(); updateImgWsBar(); procDeb(); };
-$('#imgTrimPad').oninput = procDeb;
 for (const id of ['imgSmartRemovePrint', 'imgSmartSmooth', 'imgSmartKeepLargest', 'imgSmartFindCircle']) { $('#' + id).onchange = procDeb; }
 
 // ---- eyedropper: sample a pixel straight from the photo and set the slider so that pixel's own
@@ -5174,15 +5302,16 @@ let smartTool = 'none';
 let bridgeFirst = null;
 let smartDrag = null; // {kind:'brush', type, r, pts} | {kind:'zone', x0, y0}
 
-const SMART_TOOL_NAMES = { erase: 'Obriši', restore: 'Vrati', zone: 'Područje s jačinom', bridge: 'Spoji prekid', recolor: 'Preboji u plavo' };
+const SMART_TOOL_NAMES = { erase: 'Obriši', restore: 'Vrati', zone: 'Područje s jačinom', bridge: 'Spoji prekid', recolor: 'Preboji u plavo', crop: 'Zadrži samo odabrano' };
 const SMART_TOOL_HINTS = {
   erase: 'Držite lijevu tipku miša i prijeđite preko onoga što treba nestati (ostaci teksta, linija, mrlje).',
   restore: 'Držite lijevu tipku miša i prijeđite preko dijela tinte koji je nestao – vraća se ono što je na fotografiji nacrtano, papir ostaje proziran.',
   zone: 'Povucite pravokutnik preko dijela slike. U njemu vrijedi vlastita jačina brisanja (klizač ispod): veća briše više, manja čuva više tinte, 0 vraća taj dio kakav je na fotografiji.',
   bridge: 'Kliknite na jedan kraj prekinutog poteza, zatim na drugi – spojit će se potezom u boji tinte. Debljinu spoja određuje klizač ispod.',
+  crop: 'Povucite pravokutnik oko potpisa – sve izvan njega se briše (npr. datum ili drugi potpis na istoj fotografiji). Može se poništiti.',
   recolor: 'Držite lijevu tipku miša i prijeđite preko crnog ili sivog dijela potpisa – postat će plav. Prebojiti se mogu i crte iscrtane alatom „Spoji prekid”. Boja se uzima automatski s plavog dijela slike; drugu boju uzmite gumbom „Uzmi boju s potpisa”.',
 };
-const SMART_TOOLS = ['erase', 'restore', 'zone', 'bridge', 'recolor'];
+const SMART_TOOLS = ['erase', 'restore', 'zone', 'bridge', 'crop', 'recolor'];
 
 let recolorColor = null;   // [r,g,b] taken from the signature by the user; null = automatic
 let recolorPicking = false;
@@ -5212,9 +5341,11 @@ function retuneLastRecolor() {
 $('#imgRecolorPick').onclick = () => setRecolorPicking(!recolorPicking);
 $('#imgRecolorAuto').onclick = () => { recolorColor = null; setRecolorPicking(false); retuneLastRecolor(); };
 $('#imgRecolorStrength').oninput = () => { updateRecolorUi(); retuneLastRecolor(); };
+let smartToolStart = 0; // how many touch-up actions existed when the current tool was picked (Esc can drop the newer ones)
 function setSmartTool(t) {
   if (t !== 'none' && t === smartTool) t = 'none'; // clicking the active tool again switches it off
   smartTool = t;
+  smartToolStart = S.img && S.img.smartActions ? S.img.smartActions.length : 0;
   bridgeFirst = null; smartDrag = null; recolorPicking = false;
   if (t !== 'none' && blueEyedrop) setBlueEyedrop(false);
   for (const m of SMART_TOOLS) $('#imgSmartTool' + m[0].toUpperCase() + m.slice(1)).classList.toggle('on', t === m);
@@ -5315,8 +5446,8 @@ $('#imgPrev').addEventListener('mousedown', (e) => {
       processImg(); updateSmartTouchUi();
     }
     e.preventDefault();
-  } else if (smartTool === 'zone') {
-    smartDrag = { kind: 'zone', x0: p[0], y0: p[1] };
+  } else if (smartTool === 'zone' || smartTool === 'crop') {
+    smartDrag = { kind: smartTool, x0: p[0], y0: p[1] };
     e.preventDefault();
   }
   drawCursorOv();
@@ -5349,6 +5480,13 @@ window.addEventListener('mouseup', () => {
     const act = { type: d.type, pts: base, r: d.r };
     if (d.type === 'recolor') { act.color = currentRecolorColor().slice(); act.strength = (parseFloat($('#imgRecolorStrength').value) || 100) / 100; }
     im.smartActions.push(act);
+  } else if (d.kind === 'crop' && lastCanvasPt) {
+    if (Math.abs(lastCanvasPt[0] - d.x0) < 3 || Math.abs(lastCanvasPt[1] - d.y0) < 3) { drawCursorOv(); return; } // a click, not a rectangle
+    im.smartActions.push({
+      type: 'crop',
+      x0: Math.min(d.x0, lastCanvasPt[0]) + (im.trimX0 || 0), y0: Math.min(d.y0, lastCanvasPt[1]) + (im.trimY0 || 0),
+      x1: Math.max(d.x0, lastCanvasPt[0]) + (im.trimX0 || 0), y1: Math.max(d.y0, lastCanvasPt[1]) + (im.trimY0 || 0),
+    });
   } else if (d.kind === 'zone' && lastCanvasPt) {
     const level = parseFloat($('#imgZoneLevel').value) || 0;
     if (Math.abs(lastCanvasPt[0] - d.x0) < 3 || Math.abs(lastCanvasPt[1] - d.y0) < 3) { drawCursorOv(); return; } // a click, not a rectangle
@@ -5362,9 +5500,266 @@ window.addEventListener('mouseup', () => {
   drawCursorOv();
 });
 
+setImgInkMode('blue', true);
 setImgProcMode('manual', true); // initial UI state (a loaded image picks its own, see setImageFromBlob)
 syncLevelLabels();
 updateSmartTouchUi();
+
+// ============================================================ black & white signatures ("Crno-bijela")
+// Extracts a dark (black/grey) handwritten signature from a photo or scan of a black & white print or
+// photocopy: grey, unevenly lit paper with coarse toner grain, table lines, copier streaks. Unlike the
+// blue-ink pipeline, colour cannot tell ink from print here, so it works on DARKNESS RELATIVE TO THE
+// LOCAL PAPER:
+//  1. luminance, lightly smoothed (removes the toner grain, keeps ~10 px pen strokes);
+//  2. the paper level is estimated everywhere on a coarse grid (grey opening kills bright copier
+//     streaks, grey closing removes the writing) -- so shadows / vignetting / grey copies all become
+//     "paper" and the writing stands out by how much darker it is than the paper right around it;
+//  3. two thresholds (hysteresis): a stroke is kept only if it contains some clearly dark pixels, so
+//     grain blobs (which are only faintly darker) disappear while faint edges of real strokes stay;
+//  4. table lines: long, thin, nearly straight runs (also slightly slanted -- photographed pages are
+//     never perfectly square) are removed; where a pen stroke crossed a line, the gap is bridged;
+//  5. tiny leftovers and stray bits away from the writing are dropped (see removeStrayComponents).
+// The result keeps a soft edge (opacity follows darkness) in a neutral near-black ink colour.
+// Level (slider) 1-100 = how dark something must be to count as ink: left keeps faint strokes (more
+// grain), right cleans harder (thin strokes may break). 0 = untouched photo.
+const MONO_DEFAULT_LEVEL = 30;
+const MONO_INK = [22, 22, 26];
+let _monoCache = null;
+
+/** Separable box blur (running sums, edge pixels repeated) over a Float32 image. */
+function monoBoxBlur(src, w, h, r) {
+  if (r <= 0) return src.slice();
+  const tmp = new Float32Array(w * h); const out = new Float32Array(w * h); const win = 2 * r + 1;
+  for (let y = 0; y < h; y++) {
+    const row = y * w; let acc = 0;
+    for (let k = -r; k <= r; k++) acc += src[row + (k < 0 ? 0 : k > w - 1 ? w - 1 : k)];
+    for (let x = 0; x < w; x++) {
+      tmp[row + x] = acc / win;
+      const xa = x - r; const xb = x + r + 1;
+      acc += src[row + (xb > w - 1 ? w - 1 : xb)] - src[row + (xa < 0 ? 0 : xa)];
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    let acc = 0;
+    for (let k = -r; k <= r; k++) acc += tmp[(k < 0 ? 0 : k > h - 1 ? h - 1 : k) * w + x];
+    for (let y = 0; y < h; y++) {
+      out[y * w + x] = acc / win;
+      const ya = y - r; const yb = y + r + 1;
+      acc += tmp[(yb > h - 1 ? h - 1 : yb) * w + x] - tmp[(ya < 0 ? 0 : ya) * w + x];
+    }
+  }
+  return out;
+}
+/** Grey min (isMax=false) / max filter with a square window on a small Float32 grid. */
+function monoGridExtreme(g, gw, gh, r, isMax) {
+  const out = new Float32Array(gw * gh);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    let m = isMax ? -1e9 : 1e9;
+    for (let yy = Math.max(0, y - r); yy <= Math.min(gh - 1, y + r); yy++) {
+      for (let xx = Math.max(0, x - r); xx <= Math.min(gw - 1, x + r); xx++) {
+        const v = g[yy * gw + xx]; if (isMax ? v > m : v < m) m = v;
+      }
+    }
+    out[y * gw + x] = m;
+  }
+  return out;
+}
+/** Binary dilation along one axis (radius r) with a running count. */
+function monoDilate1D(bin, w, h, r, horizontal) {
+  const out = new Uint8Array(w * h);
+  if (horizontal) {
+    for (let y = 0; y < h; y++) {
+      const row = y * w; let cnt = 0;
+      for (let k = 0; k <= r && k < w; k++) cnt += bin[row + k];
+      for (let x = 0; x < w; x++) {
+        if (cnt) out[row + x] = 1;
+        const xa = x - r; const xb = x + r + 1;
+        if (xb < w) cnt += bin[row + xb];
+        if (xa >= 0) cnt -= bin[row + xa];
+      }
+    }
+  } else {
+    for (let x = 0; x < w; x++) {
+      let cnt = 0;
+      for (let k = 0; k <= r && k < h; k++) cnt += bin[k * w + x];
+      for (let y = 0; y < h; y++) {
+        if (cnt) out[y * w + x] = 1;
+        const ya = y - r; const yb = y + r + 1;
+        if (yb < h) cnt += bin[yb * w + x];
+        if (ya >= 0) cnt -= bin[ya * w + x];
+      }
+    }
+  }
+  return out;
+}
+/** Marks (in `out`) every run of `bin` at least `minLen` long along nearly-horizontal (or, with
+ * horizontal=false, nearly-vertical) straight paths, tilted up to ~7 degrees either way. */
+function monoLongRuns(bin, w, h, minLen, horizontal, out) {
+  const slopes = [-0.12, -0.09, -0.06, -0.03, 0, 0.03, 0.06, 0.09, 0.12];
+  const len = horizontal ? w : h; const across = horizontal ? h : w;
+  for (const s of slopes) {
+    const lo = Math.floor(Math.min(0, -s * len)); const hi = Math.ceil(across + Math.max(0, -s * len));
+    for (let o = lo; o < hi; o++) {
+      let run = 0; let start = 0;
+      for (let t = 0; t <= len; t++) {
+        let on = 0; let idx = -1;
+        if (t < len) {
+          const c = Math.round(o + s * t);
+          if (c >= 0 && c < across) { idx = horizontal ? c * w + t : t * w + c; on = bin[idx]; }
+        }
+        if (on) { if (!run) start = t; run++; continue; }
+        if (run >= minLen) {
+          for (let k = start; k < t; k++) {
+            const c = Math.round(o + s * k);
+            out[horizontal ? c * w + k : k * w + c] = 1;
+          }
+        }
+        run = 0;
+      }
+    }
+  }
+}
+function _monoSampleHash(px) {
+  let hsh = 2166136261; const step = Math.max(1, Math.floor(px.length / 4096));
+  for (let i = 0; i < px.length; i += step) { hsh ^= px[i]; hsh = Math.imul(hsh, 16777619); }
+  return hsh >>> 0;
+}
+/** Level-independent part (cached per image + settings): darkness map D (0..1, relative to the local
+ * paper) and the table-line zones. */
+function monoPrepare(px, w, h, o) {
+  const key = [w, h, _monoSampleHash(px), !!o.smooth, !!o.removePrint].join('|');
+  if (_monoCache && _monoCache.key === key) return _monoCache;
+  const n = w * h;
+  const G = new Float32Array(n);
+  for (let i = 0, p = 0; i < n; i++, p += 4) {
+    const a = px[p + 3] / 255; // transparent parts of a PNG count as white paper
+    G[i] = 255 - a * (255 - (0.299 * px[p] + 0.587 * px[p + 1] + 0.114 * px[p + 2]));
+  }
+  const rBase = Math.max(1, Math.round(Math.min(w, h) / 750));
+  const r = o.smooth ? rBase : Math.max(1, rBase - 1);
+  const Gs = monoBoxBlur(monoBoxBlur(G, w, h, r), w, h, r);
+  // paper level on a coarse grid
+  const B = Math.max(4, Math.round(Math.max(w, h) / 250));
+  const gw = Math.ceil(w / B); const gh = Math.ceil(h / B);
+  let g = new Float32Array(gw * gh); const gc = new Float32Array(gw * gh);
+  for (let y = 0; y < h; y++) { const gy = (y / B) | 0; for (let x = 0; x < w; x++) { const k = gy * gw + ((x / B) | 0); g[k] += G[y * w + x]; gc[k]++; } }
+  for (let k = 0; k < g.length; k++) g[k] /= gc[k] || 1;
+  g = monoGridExtreme(monoGridExtreme(g, gw, gh, 1, false), gw, gh, 1, true); // opening: no bright streaks
+  g = monoGridExtreme(monoGridExtreme(g, gw, gh, 3, true), gw, gh, 3, false); // closing: no writing
+  g = monoBoxBlur(g, gw, gh, 1);
+  const D = new Float32Array(n);
+  for (let y = 0; y < h; y++) {
+    const fy = Math.min(gh - 1, Math.max(0, (y + 0.5) / B - 0.5)); const y0 = Math.floor(fy); const y1 = Math.min(gh - 1, y0 + 1); const ty = fy - y0;
+    for (let x = 0; x < w; x++) {
+      const fx = Math.min(gw - 1, Math.max(0, (x + 0.5) / B - 0.5)); const x0 = Math.floor(fx); const x1 = Math.min(gw - 1, x0 + 1); const tx = fx - x0;
+      const bg = (g[y0 * gw + x0] * (1 - tx) + g[y0 * gw + x1] * tx) * (1 - ty) + (g[y1 * gw + x0] * (1 - tx) + g[y1 * gw + x1] * tx) * ty;
+      const i = y * w + x;
+      const d = (bg - Gs[i]) / Math.max(bg, 30);
+      D[i] = d < 0 ? 0 : d > 1 ? 1 : d;
+    }
+  }
+  // table lines, found once on a permissive mask
+  let hZone = null; let vZone = null;
+  if (o.removePrint) {
+    const base = new Uint8Array(n); for (let i = 0; i < n; i++) base[i] = D[i] > 0.15 ? 1 : 0;
+    const hl = new Uint8Array(n); const vl = new Uint8Array(n);
+    monoLongRuns(monoDilate1D(base, w, h, 2, false), w, h, Math.max(100, Math.round(w * 0.15)), true, hl);
+    monoLongRuns(monoDilate1D(base, w, h, 2, true), w, h, Math.max(100, Math.round(h * 0.15)), false, vl);
+    hZone = boxExtreme(hl, w, h, 3, true); vZone = boxExtreme(vl, w, h, 3, true);
+  }
+  _monoCache = { key, D, hZone, vZone };
+  return _monoCache;
+}
+/** "Crno-bijela" cleaning at one slider level; writes the result into px, returns the 0/1 mask. */
+function monoClean(px, w, h, level, o) {
+  const n = w * h;
+  if (level <= 0) return new Uint8Array(n).fill(1);
+  const prep = monoPrepare(px, w, h, o); const D = prep.D;
+  const L = clamp(level, 0, 100) / 100;
+  const t = 0.08 + 0.30 * L; const tStrong = t + 0.10;
+  // hysteresis: weak components are kept only if they contain enough clearly dark pixels
+  const weak = new Uint8Array(n); for (let i = 0; i < n; i++) weak[i] = D[i] > t ? 1 : 0;
+  let M = new Uint8Array(n);
+  {
+    const seen = new Uint8Array(n); let stack = new Int32Array(8192); const comp = new Int32Array(n);
+    for (let i = 0; i < n; i++) {
+      if (!weak[i] || seen[i]) continue;
+      let sp = 0; let cp = 0; let strong = 0;
+      stack[sp++] = i; seen[i] = 1;
+      while (sp) {
+        const j = stack[--sp]; comp[cp++] = j; if (D[j] > tStrong) strong++;
+        const x = j % w; const y = (j / w) | 0;
+        for (let yy = y > 0 ? y - 1 : 0; yy <= (y < h - 1 ? y + 1 : y); yy++) {
+          for (let xx = x > 0 ? x - 1 : 0; xx <= (x < w - 1 ? x + 1 : x); xx++) {
+            const k = yy * w + xx; if (!weak[k] || seen[k]) continue;
+            seen[k] = 1;
+            if (sp >= stack.length) { const a = new Int32Array(stack.length * 2); a.set(stack); stack = a; }
+            stack[sp++] = k;
+          }
+        }
+      }
+      if (strong >= 6) for (let k = 0; k < cp; k++) M[comp[k]] = 1;
+    }
+  }
+  // table lines out, pen strokes that crossed them bridged back
+  if (prep.hZone) {
+    const Z = new Uint8Array(n); for (let i = 0; i < n; i++) Z[i] = prep.hZone[i] || prep.vZone[i] ? 1 : 0;
+    const Mo = new Uint8Array(n); for (let i = 0; i < n; i++) Mo[i] = M[i] && !Z[i] ? 1 : 0;
+    const nearH = monoDilate1D(Mo, w, h, 2, true); const nearV = monoDilate1D(Mo, w, h, 2, false);
+    const fill = new Uint8Array(n);
+    const bridge = (zone, near, vertical) => { // vertical=true: walk columns across horizontal lines
+      const outer = vertical ? w : h; const inner = vertical ? h : w;
+      const at = (a, b) => (vertical ? b * w + a : a * w + b);
+      for (let a = 0; a < outer; a++) {
+        let b = 0;
+        while (b < inner) {
+          if (!zone[at(a, b)]) { b++; continue; }
+          const b0 = b; while (b < inner && zone[at(a, b)]) b++;
+          const b1 = b - 1;
+          if (b1 - b0 > 30 || b0 < 4 || b1 > inner - 5) continue;
+          let before = false; let after = false;
+          for (let k = 1; k <= 4; k++) { if (near[at(a, b0 - k)]) before = true; if (near[at(a, b1 + k)]) after = true; }
+          if (before && after) for (let k = b0; k <= b1; k++) fill[at(a, k)] = 1;
+        }
+      }
+    };
+    bridge(prep.hZone, nearH, true);
+    bridge(prep.vZone, nearV, false);
+    for (let i = 0; i < n; i++) M[i] = Mo[i] || (fill[i] && D[i] > t) ? 1 : 0;
+  }
+  M = removeSmallComponents(M, w, h, Math.max(12, Math.round(n * 1e-5)));
+  if (o.keepLargest) M = removeStrayComponents(M, w, h);
+  // opacity from darkness, normalised to the stroke core (85th percentile)
+  const hist = new Uint32Array(256); let m = 0;
+  for (let i = 0; i < n; i++) if (M[i]) { hist[Math.min(255, Math.round(D[i] * 255))]++; m++; }
+  let dref = 0.5;
+  if (m) { let acc = 0; for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= m * 0.85) { dref = v / 255; break; } } }
+  const span = Math.max(0.05, dref - t);
+  for (let i = 0, p = 0; i < n; i++, p += 4) {
+    if (!M[i]) { px[p + 3] = 0; continue; }
+    const a = clamp((D[i] - t) / span, 0, 1);
+    px[p] = MONO_INK[0]; px[p + 1] = MONO_INK[1]; px[p + 2] = MONO_INK[2]; px[p + 3] = Math.round(Math.max(0.12, a) * 255);
+  }
+  return M;
+}
+/** Quick look at a freshly loaded photo: grey-only (no real colour) with some dark marks on it? */
+function photoIsMono(src) {
+  const nw = src.naturalWidth || 1; const nh = src.naturalHeight || 1;
+  const sc = Math.min(1, 400 / Math.max(nw, nh));
+  const w = Math.max(1, Math.round(nw * sc)); const h = Math.max(1, Math.round(nh * sc));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(src, 0, 0, w, h);
+  const d = cx.getImageData(0, 0, w, h).data;
+  const sat = new Uint32Array(256); const lum = new Uint32Array(256); let n = 0;
+  for (let p = 0; p < d.length; p += 4) {
+    if (d[p + 3] < 20) continue;
+    n++; sat[Math.max(d[p], d[p + 1], d[p + 2]) - Math.min(d[p], d[p + 1], d[p + 2])]++;
+    lum[Math.round(0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2])]++;
+  }
+  if (!n) return false;
+  const pct = (hst, q) => { let acc = 0; for (let v = 0; v < 256; v++) { acc += hst[v]; if (acc >= n * q) return v; } return 255; };
+  return pct(sat, 0.95) <= 30 && pct(lum, 0.5) - pct(lum, 0.02) >= 40;
+}
 
 // ============================================================ pages tab: full-page grid, in the main
 // workspace (#pagesWorkspace), with drag & drop reordering.
@@ -5687,9 +6082,9 @@ $('#pgDel').onclick = () => {
 /** Appends every page of the given PDF files onto the end of the current document, as one undoable
  * edit. Shared by "Dodaj stranice iz drugih PDF-ova…" (a document is already open) and the "Stranice"
  * tab's own empty-state opener (which uses this for every file after the first). */
-async function appendPdfFiles(files) {
+async function appendPdfFiles(files, opt) {
   if (!files.length || !S.doc) return;
-  const first = S.numPages + 1;
+  const first = opt && opt.stayOnPage ? S.page : S.numPages + 1;
   const okNames = []; const failNames = [];
   const desc = files.length === 1 ? `Dodane stranice iz „${files[0].name}”` : `Dodane stranice iz ${files.length} PDF-a`;
   const ok = await pageEdit(desc, async () => {
@@ -5715,9 +6110,7 @@ $('#pgAppendFile').onchange = async (e) => {
 $('#btnPagesOpen').onclick = () => $('#pagesOpenFile').click();
 $('#pagesOpenFile').onchange = async (e) => {
   const files = Array.from(e.target.files || []); e.target.value = ''; if (!files.length) return;
-  const [first, ...rest] = files;
-  await openBytes(new Uint8Array(await first.arrayBuffer()), first.name, null);
-  if (S.doc && rest.length) await appendPdfFiles(rest);
+  await openPdfFiles(files, null);
 };
 function parseRange(str, n) {
   const out = [];
@@ -5804,6 +6197,115 @@ async function bRun(save) {
 $('#bCount').onclick = () => bRun(false);
 $('#bRun').onclick = () => bRun(true);
 
+// ============================================================ Esc: leave the active tool (every tab)
+// Esc always gets you out of whatever tool is active. When the tool holds work that is not in the
+// document yet (text placed but not added, a drawn shape, a positioned signature, an edited label,
+// touch-ups made with the current "Slika" tool) a small dialog asks: Spremi / Odbaci / Odustani.
+
+/** Resolves to 'save' | 'discard' | 'cancel'. */
+function askSaveDiscard(title, msg, saveLabel) {
+  const d = $('#escDialog');
+  $('#escDialogTitle').textContent = title; $('#escDialogMsg').textContent = msg;
+  $('#escSave').textContent = saveLabel || 'Spremi';
+  return new Promise((res) => {
+    let done = false;
+    const finish = (v) => { if (done) return; done = true; if (d.open) d.close(); res(v); };
+    $('#escSave').onclick = () => finish('save');
+    $('#escDiscard').onclick = () => finish('discard');
+    $('#escCancel').onclick = () => finish('cancel');
+    d.oncancel = (e) => { e.preventDefault(); finish('cancel'); }; // Esc inside the dialog = Odustani
+    d.onclose = () => finish('cancel');
+    d.showModal();
+    $('#escSave').focus();
+  });
+}
+
+/** Esc pressed mid-drag: abandon the drag, putting back what it had changed so far. */
+function cancelActiveDrag() {
+  if (!drag) return false;
+  const d = drag; drag = null;
+  if (d.mode === 'shapedraw') { S.shape = null; syncShapeInputs(); updateButtons(); }
+  else if ((d.mode === 'shapemove' || d.mode.startsWith('shaperesize')) && d.start && S.shape) { Object.assign(S.shape, d.start); syncShapeInputs(); }
+  else if ((d.mode === 'boxmove' || d.mode.startsWith('boxresize-')) && d.start && S.addPos) {
+    S.addPos.ux = d.start.ux; S.addPos.uy = d.start.uy;
+    if (d.start.g) { $('#addBoxW').value = Math.round((d.start.g.bw / S.scale) * PT_MM * 10) / 10; $('#addBoxH').value = Math.round((d.start.g.bh / S.scale) * PT_MM * 10) / 10; }
+    syncAddInputs(); updateAddNotice();
+  } else if ((d.mode === 'imgmove' || d.mode === 'imgresize') && d.start && S.img && S.img.pos) {
+    S.img.pos.ux = d.start.ux; S.img.pos.uy = d.start.uy; S.img.wpt = d.start.w; S.img.hpt = d.start.h; syncImgInputs();
+  } else if (d.mode === 'runmove') S.moveOff = null;
+  else if (d.mode === 'snipdraw') S.snipRect = null;
+  ovEl.style.cursor = '';
+  drawOverlay(); updateStatus();
+  return true;
+}
+
+let escBusy = false;
+async function handleEscape() {
+  if (escBusy || S.busy) return;
+  escBusy = true;
+  try { await escapeActiveTool(); } finally { escBusy = false; }
+}
+async function escapeActiveTool() {
+  if (cancelActiveDrag()) return;
+  if (S.snipMode) { exitSnipMode(); return; }
+  const t = S.tab;
+  if (t === 'sel') {
+    const r = S.sel;
+    if (r && r.editable && $('#selText').value !== r.text) {
+      const a = await askSaveDiscard('Izlaz iz uređivanja natpisa', `Tekst natpisa „${r.text}” ste promijenili, ali izmjena još nije primijenjena. Želite li je spremiti?`);
+      if (a === 'cancel') return;
+      if (a === 'save') await $('#btnSelApply').onclick();
+    }
+    S.sel = null; S.moveOff = null; showSel(); drawOverlay(); updateStatus(); updateButtons();
+    return;
+  }
+  if (t === 'add') {
+    if (addMode === 'shape') {
+      if (!S.shape) return;
+      const a = await askSaveDiscard('Izlaz iz alata Oblik', 'Nacrtani oblik još nije dodan na plan. Želite li ga spremiti (dodati na plan)?');
+      if (a === 'cancel') return;
+      if (a === 'save') { await $('#btnAddShape').onclick(); }
+      S.shape = null; syncShapeInputs(); drawOverlay(); updateButtons(); updateStatus();
+      return;
+    }
+    if (!S.addPos) return;
+    if ($('#addText').value.trim()) {
+      const a = await askSaveDiscard('Izlaz iz alata Tekst', 'Tekst je postavljen na plan, ali još nije dodan u dokument. Želite li ga spremiti (dodati na plan)?');
+      if (a === 'cancel') return;
+      if (a === 'save') await $('#btnAdd').onclick();
+    }
+    S.addPos = null; drawOverlay(); updateButtons(); updateStatus();
+    return;
+  }
+  if (t === 'img') {
+    const im = S.img;
+    if (!im || !im.pos) return;
+    if (im.canvas && S.doc) {
+      const a = await askSaveDiscard('Izlaz iz alata Potpis', 'Potpis/slika je postavljen na plan, ali još nije dodan u dokument. Želite li ga spremiti (dodati na plan)?');
+      if (a === 'cancel') return;
+      if (a === 'save') await $('#btnImgApply').onclick();
+    }
+    im.pos = null; drawOverlay(); updateButtons(); updateStatus();
+    return;
+  }
+  if (t === 'imgfix') {
+    if (blueEyedrop) { setBlueEyedrop(false); return; }
+    if (smartTool === 'none') return;
+    const im = S.img;
+    const added = im && im.smartActions ? im.smartActions.length - smartToolStart : 0;
+    if (added > 0) {
+      const a = await askSaveDiscard('Izlaz iz alata za doradu', `Ovim ste alatom napravili ${added === 1 ? '1 izmjenu' : added + ' izmjena'} na slici. Želite li ${added === 1 ? 'je' : 'ih'} zadržati?`, 'Zadrži');
+      if (a === 'cancel') return;
+      if (a === 'discard') { im.smartActions.length = smartToolStart; processImg(); updateSmartTouchUi(); }
+    }
+    setSmartTool('none');
+    return;
+  }
+  if (t === 'pages') {
+    if (S.selPages.size) setAllPagesSelected(false);
+  }
+}
+
 // ============================================================ buttons, open/save, shortcuts, init
 // local "Undo" convenience button repeated on every tab, alongside the header's Poništi/Ponovi
 const UNDO_BTN_IDS = ['btnUndoSel', 'btnUndoAdd', 'btnUndoImg', 'btnUndoImgFix', 'btnUndoPages', 'btnUndoBatch'];
@@ -5836,12 +6338,12 @@ function updateButtons() {
 async function pickFile() {
   if (window.showOpenFilePicker) {
     try {
-      const opts = { types: [{ description: 'PDF dokument', accept: { 'application/pdf': ['.pdf'] } }] };
-      let h;
-      try { [h] = await window.showOpenFilePicker(S.handle ? Object.assign({ startIn: S.handle }, opts) : opts); }
-      catch (e) { if (e && e.name === 'TypeError') [h] = await window.showOpenFilePicker(opts); else throw e; }
-      const f = await h.getFile();
-      await openBytes(new Uint8Array(await f.arrayBuffer()), f.name, h);
+      const opts = { multiple: true, types: [{ description: 'PDF dokument', accept: { 'application/pdf': ['.pdf'] } }] };
+      let hs;
+      try { hs = await window.showOpenFilePicker(S.handle ? Object.assign({ startIn: S.handle }, opts) : opts); }
+      catch (e) { if (e && e.name === 'TypeError') hs = await window.showOpenFilePicker(opts); else throw e; }
+      const files = await Promise.all(hs.map((h) => h.getFile()));
+      await openPdfFiles(files, hs[0]);
       return;
     } catch (e) { if (e && e.name === 'AbortError') return; }
   }
@@ -5849,8 +6351,8 @@ async function pickFile() {
 }
 $('#btnOpen').onclick = pickFile; $('#btnOpen2').onclick = pickFile;
 $('#fileInput').onchange = async (e) => {
-  const f = e.target.files[0]; e.target.value = '';
-  if (f) await openBytes(new Uint8Array(await f.arrayBuffer()), f.name, null);
+  const files = Array.from(e.target.files || []); e.target.value = '';
+  if (files.length) await openPdfFiles(files, null);
 };
 const viewer = $('#viewer');
 viewer.addEventListener('dragover', (e) => { e.preventDefault(); $('#empty').classList.add('drag'); });
@@ -5858,12 +6360,13 @@ viewer.addEventListener('dragleave', () => $('#empty').classList.remove('drag'))
 viewer.addEventListener('drop', async (e) => {
   e.preventDefault(); $('#empty').classList.remove('drag');
   const item = e.dataTransfer.items && e.dataTransfer.items[0];
-  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+  const f = files[0];
   if (!f) return;
   if (/^image\//.test(f.type)) { setTab('imgfix'); await setImageFromBlob(f, f.name); return; }
   let h = null;
   try { if (item && item.getAsFileSystemHandle) h = await item.getAsFileSystemHandle(); } catch (err) { h = null; }
-  await openBytes(new Uint8Array(await f.arrayBuffer()), f.name, h && h.kind === 'file' ? h : null);
+  await openPdfFiles(files, h && h.kind === 'file' ? h : null);
 });
 
 function outName() {
@@ -5909,10 +6412,16 @@ window.addEventListener('keydown', (e) => {
   const mod = e.ctrlKey || e.metaKey; const k = e.key.toLowerCase();
   if (mod && k === 's') { e.preventDefault(); if (!$('#btnSave').disabled) $('#btnSave').click(); return; }
   if (mod && k === 'f') { e.preventDefault(); if (S.doc) { setTab('sel'); $('#q').focus(); $('#q').select(); } return; }
+  if (e.key === 'Escape') {
+    if (document.querySelector('dialog[open]')) return; // the dialog handles its own Esc
+    e.preventDefault();
+    if (inField && e.target.blur) e.target.blur();
+    handleEscape();
+    return;
+  }
   if (inField) return;
   if (mod && !e.shiftKey && k === 'z') { e.preventDefault(); goHist(S.hi - 1); }
   else if (mod && (k === 'y' || (e.shiftKey && k === 'z'))) { e.preventDefault(); goHist(S.hi + 1); }
-  else if (e.key === 'Escape') { if (S.snipMode) { exitSnipMode(); } else { S.sel = null; showSel(); drawOverlay(); updateStatus(); updateButtons(); } }
   else if (e.key === 'Delete' && S.sel && S.tab === 'sel') { e.preventDefault(); deleteSel(); }
   else if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) && S.sel && S.sel.canMove && S.tab === 'sel') {
     e.preventDefault(); nudge(e.key.slice(5).toLowerCase(), e.shiftKey ? 5 : 1);
@@ -5926,8 +6435,8 @@ window.addEventListener('beforeunload', (e) => { if (S.dirty) { e.preventDefault
 window.__app = {
   S, E, B, applyBlueExtract, blueParamsFromLevel, looksNeutralGray, blueScoreRgb,
   healPrintArtifacts, smoothForAnalysis, findStampCircle, restrictToCircleCluster,
-  keepOnlyLargestComponent, applyZoneOverrides, readBlueSettings,
-  setSmartTool: (t) => setSmartTool(t), getSmartTool: () => smartTool,
+  keepOnlyLargestComponent, removeStrayComponents, applyZoneOverrides, readBlueSettings,
+  setSmartTool: (t) => setSmartTool(t), getSmartTool: () => smartTool, processImg: () => processImg(), monoClean, photoIsMono,
   addBoxHit: (x, y) => addBoxHit(x, y), addBoxGeom: () => addBoxGeom(),
 };
 setTab('sel'); updateButtons(); updateFindMode();
